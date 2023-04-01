@@ -1,11 +1,11 @@
 package redis
 
 import (
-	"github.com/unknowntpo/page/pkg/redis"
+	"github.com/unknowntpo/page/internal/infra"
 
-	goRedis "github.com/redis/go-redis/v9"
+	redis "github.com/redis/go-redis/v9"
 )
 
-func PrepareTestDatabase() *goRedis.Client {
-	return redis.NewClient()
+func PrepareTestDatabase() *redis.Client {
+	return infra.NewRedisClient()
 }
