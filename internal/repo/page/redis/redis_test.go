@@ -1,8 +1,10 @@
 package redis
 
 import (
+	"context"
 	"testing"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/unknowntpo/page/domain"
 
 	"github.com/onsi/ginkgo/v2"
@@ -35,5 +37,26 @@ var _ = ginkgo.Describe("PageRepo", func() {
 			gomega.Expect(1 + 1).To(gomega.Equal(2))
 		})
 	})
+})
 
+var _ = ginkgo.Describe("PingPong", func() {
+	var client *redis.Client
+
+	ginkgo.BeforeEach(func() {
+		client = PrepareTestDatabase()
+	})
+
+	ginkgo.When("PING", func() {
+		var (
+			err    error
+			stsCmd *redis.StatusCmd
+		)
+		ginkgo.BeforeEach(func() {
+			stsCmd = client.Ping(context.Background())
+			gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+		})
+		ginkgo.It("should", func() {
+			gomega.Expect(stsCmd.Result()).To(gomega.Equal("PONG"))
+		})
+	})
 })
