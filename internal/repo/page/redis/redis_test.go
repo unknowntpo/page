@@ -24,17 +24,60 @@ var _ = ginkgo.Describe("PageRepo", func() {
 		repo = NewPageRepo(client)
 	})
 
-	ginkgo.When("lala", func() {
+	ginkgo.When("SetAndGet to a List", func() {
 		var (
-			err error
+			err     error
+			pages   []domain.Page
+			listKey domain.ListKey
 		)
 		ginkgo.BeforeEach(func() {
-			_, err = repo.GetHead(domain.ListKey("fdsaf"))
-
+			listKey = domain.ListKey("testList")
+			pages = []domain.Page{
+				{
+					// Key      PageKey
+					// Articles []Article
+					// NextPage PageKey
+					Key:      domain.GeneratePageKey(),
+					Articles: domain.GenerateDummyArticles(3),
+				},
+				{
+					// Key      PageKey
+					// Articles []Article
+					// NextPage PageKey
+					Key:      domain.GeneratePageKey(),
+					Articles: domain.GenerateDummyArticles(3),
+				},
+				{
+					// Key      PageKey
+					// Articles []Article
+					// NextPage PageKey
+					Key:      domain.GeneratePageKey(),
+					Articles: domain.GenerateDummyArticles(3),
+				},
+			}
 			gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 		})
-		ginkgo.It("should", func() {
-			gomega.Expect(1 + 1).To(gomega.Equal(2))
+		ginkgo.When("Call SetPage for every page", func() {
+			var (
+				gotPages []domain.Page
+				gotPage  domain.Page
+				gotHead  domain.PageKey
+				err      error
+			)
+			ginkgo.BeforeEach(func() {
+				gotHead, err = repo.GetHead(listKey)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+				curPageKey := gotHead
+				for i := 0; i < len(pages); i++ {
+					gotPage, err = repo.GetPage(curPageKey)
+					gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+					gotPages = append(gotPages, gotPage)
+				}
+			})
+			ginkgo.It("every page should be set in FIFO order", func() {
+				gomega.Expect(gotPage).To(gomega.Equal(pages))
+			})
 		})
 	})
 })

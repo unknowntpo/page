@@ -1,5 +1,9 @@
 package domain
 
+import (
+	"github.com/google/uuid"
+)
+
 type PageUsecase interface {
 	GetPage(pageKey PageKey) (Page, error)
 	GetHead(listKey ListKey) (PageKey, error)
@@ -31,3 +35,11 @@ type Article struct {
 	Title   string
 	Content string
 }
+
+func GeneratePageKey() PageKey {
+	return PageKey(uuid.NewString())
+}
+
+const (
+	PersonalBoardKey ListKey = "personal"
+)
