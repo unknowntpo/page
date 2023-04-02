@@ -1,6 +1,6 @@
 package redis
 
-import "github.com/unknowntpo/page/domain"
+import "github.com/unknowntpo/page/internal/domain"
 
 type pageRepoImpl struct {
 	// any fields needed for implementation

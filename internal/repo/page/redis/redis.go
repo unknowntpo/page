@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/unknowntpo/page/domain"
+	"github.com/unknowntpo/page/internal/domain"
 
 	"github.com/redis/go-redis/v9"
 )

@@ -1,14 +1,16 @@
-package domain
+package mock
 
 import (
 	"math/rand"
 	"time"
+
+	"github.com/unknowntpo/page/internal/domain"
 )
 
-func GenerateDummyArticles(length int) []Article {
-	out := make([]Article, 0, length)
+func GenerateDummyArticles(length int) []domain.Article {
+	out := make([]domain.Article, 0, length)
 	for i := 0; i < length; i++ {
-		out = append(out, Article{Title: GenerateRandomString(10), Content: GenerateRandomString(10)})
+		out = append(out, domain.Article{Title: GenerateRandomString(10), Content: GenerateRandomString(10)})
 	}
 	return out
 }

@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/unknowntpo/page/domain"
+	"github.com/unknowntpo/page/internal/domain"
+	mock "github.com/unknowntpo/page/internal/domain/mock"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -38,21 +39,21 @@ var _ = ginkgo.Describe("PageRepo", func() {
 					// Articles []Article
 					// NextPage PageKey
 					Key:      domain.GeneratePageKey(),
-					Articles: domain.GenerateDummyArticles(3),
+					Articles: mock.GenerateDummyArticles(3),
 				},
 				{
 					// Key      PageKey
 					// Articles []Article
 					// NextPage PageKey
 					Key:      domain.GeneratePageKey(),
-					Articles: domain.GenerateDummyArticles(3),
+					Articles: mock.GenerateDummyArticles(3),
 				},
 				{
 					// Key      PageKey
 					// Articles []Article
 					// NextPage PageKey
 					Key:      domain.GeneratePageKey(),
-					Articles: domain.GenerateDummyArticles(3),
+					Articles: mock.GenerateDummyArticles(3),
 				},
 			}
 			gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
