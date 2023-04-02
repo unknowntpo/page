@@ -13,9 +13,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRedisRepo(t *testing.T) {
+func TestPageAPI(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "RedisRepo")
+	RunSpecs(t, "PageAPI")
 }
 
 var _ = Describe("PageAPI", func() {
@@ -35,7 +35,7 @@ var _ = Describe("PageAPI", func() {
 		api = page.NewPageAPI(mockPageUsecase)
 	})
 
-	When("GetHead is called", func() {
+	When("api.GetHead is called", func() {
 		var (
 			err error
 		)
@@ -49,7 +49,7 @@ var _ = Describe("PageAPI", func() {
 			gotPageKey, err = api.GetHead(context.Background(), testListKey)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
-		It("should return expected value", func() {
+		It("should return expected PageKey", func() {
 			Expect(gotPageKey).To(Equal(dummyHeadPageKey))
 		})
 	})
