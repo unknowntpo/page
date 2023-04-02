@@ -3,6 +3,7 @@ package page
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/unknowntpo/page/internal/domain"
 )
 
@@ -22,7 +23,11 @@ func (api *pageAPIImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (do
 
 func (api *pageAPIImpl) GetHead(ctx context.Context, listKey domain.ListKey) (domain.PageKey, error) {
 	// implementation
-	return domain.PageKey("dsfsd"), nil
+	pageKey, err := api.useCase.GetHead(ctx, listKey)
+	if err != nil {
+		return "", errors.Wrap(err, "failed on api.useCase.GetHead")
+	}
+	return pageKey, nil
 }
 
 func (api *pageAPIImpl) SetPage(ctx context.Context, p domain.Page) error {

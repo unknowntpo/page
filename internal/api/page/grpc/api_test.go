@@ -1,31 +1,56 @@
-package page
+package page_test
 
 import (
+	"context"
 	"testing"
 
+	page "github.com/unknowntpo/page/internal/api/page/grpc"
 	"github.com/unknowntpo/page/internal/domain"
 	"github.com/unknowntpo/page/internal/domain/mock"
 
 	"github.com/golang/mock/gomock"
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestRedisRepo(t *testing.T) {
-	gomega.RegisterFailHandler(ginkgo.Fail)
-	ginkgo.RunSpecs(t, "RedisRepo")
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "RedisRepo")
 }
 
-var _ = ginkgo.Describe("PageRepo", func() {
-	var api domain.PageAPI
+var _ = Describe("PageAPI", func() {
+	var (
+		api             domain.PageAPI
+		mockPageUsecase *mock.MockPageUsecase
+		gotPageKey      domain.PageKey
+	)
 
-	ginkgo.BeforeEach(func() {
-		ctrl := gomock.NewController(ginkgo.GinkgoT())
-		mockPageUsecase := mock.NewMockPageUsecase(ctrl)
-		api = NewPageAPI(mockPageUsecase)
+	const (
+		testListKey      domain.ListKey = "testListKey"
+		dummyHeadPageKey domain.PageKey = "dummy"
+	)
+	BeforeEach(func() {
+		ctrl := gomock.NewController(GinkgoT())
+		mockPageUsecase = mock.NewMockPageUsecase(ctrl)
+		api = page.NewPageAPI(mockPageUsecase)
 	})
 
-	ginkgo.When("GetPage is called", func() {
-
+	When("GetHead is called", func() {
+		var (
+			err error
+		)
+		BeforeEach(func() {
+			mockPageUsecase.
+				EXPECT().
+				GetHead(context.Background(), testListKey).
+				Return(dummyHeadPageKey, nil).Times(1)
+		})
+		BeforeEach(func() {
+			gotPageKey, err = api.GetHead(context.Background(), testListKey)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+		It("should return expected value", func() {
+			Expect(gotPageKey).To(Equal(dummyHeadPageKey))
+		})
 	})
 })
