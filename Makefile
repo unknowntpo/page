@@ -17,4 +17,5 @@ help:
 mock/gen:
 	mockgen -source ./internal/domain/page.go \
 		-destination internal/domain/mock/$(IFASE).go \
+		-package mock \
 		$(IFASE)
