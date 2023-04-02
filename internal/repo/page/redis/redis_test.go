@@ -65,12 +65,12 @@ var _ = ginkgo.Describe("PageRepo", func() {
 				err      error
 			)
 			ginkgo.BeforeEach(func() {
-				gotHead, err = repo.GetHead(listKey)
+				gotHead, err = repo.GetHead(context.Background(), listKey)
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
 				curPageKey := gotHead
 				for i := 0; i < len(pages); i++ {
-					gotPage, err = repo.GetPage(curPageKey)
+					gotPage, err = repo.GetPage(context.Background(), curPageKey)
 					gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 					gotPages = append(gotPages, gotPage)
 				}
