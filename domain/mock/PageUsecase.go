@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	domain "github.com/unknowntpo/page/internal/domain"
+	domain "github.com/unknowntpo/page/domain"
 )
 
 // MockPageUsecase is a mock of PageUsecase interface.

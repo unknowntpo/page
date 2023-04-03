@@ -6,9 +6,9 @@ import (
 	"log"
 
 	"github.com/pkg/errors"
-	"github.com/unknowntpo/page/internal/domain"
+	"github.com/unknowntpo/page/domain"
 
-	pb "github.com/unknowntpo/page/internal/api/page/grpc/page"
+	pb "github.com/unknowntpo/page/page/api/grpc/page"
 )
 
 func NewPageServer(uCase domain.PageUsecase) *pageServer {

@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	pageAPI "github.com/unknowntpo/page/internal/api/page/grpc"
-	pageUcase "github.com/unknowntpo/page/internal/usecase/page"
+	pageAPI "github.com/unknowntpo/page/page/api/grpc"
+	pageUcase "github.com/unknowntpo/page/page/usecase"
 
-	pb "github.com/unknowntpo/page/internal/api/page/grpc/page"
+	pb "github.com/unknowntpo/page/page/api/grpc/page"
 )
 
 func main() {

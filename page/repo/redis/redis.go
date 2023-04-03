@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/unknowntpo/page/internal/domain"
+	"github.com/unknowntpo/page/domain"
 
 	"github.com/redis/go-redis/v9"
 )

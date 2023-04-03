@@ -3,7 +3,7 @@ package page
 import (
 	"context"
 
-	"github.com/unknowntpo/page/internal/domain"
+	"github.com/unknowntpo/page/domain"
 )
 
 type pageUsecaseImpl struct {

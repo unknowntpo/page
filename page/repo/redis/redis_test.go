@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/unknowntpo/page/internal/domain"
-	mock "github.com/unknowntpo/page/internal/domain/mock"
+	"github.com/unknowntpo/page/domain"
+	mock "github.com/unknowntpo/page/domain/mock"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

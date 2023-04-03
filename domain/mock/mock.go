@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/unknowntpo/page/internal/domain"
+	"github.com/unknowntpo/page/domain"
 )
 
 func GenerateDummyArticles(length int) []domain.Article {
