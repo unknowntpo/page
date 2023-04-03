@@ -73,27 +73,18 @@ func (r *pageRepoImpl) setPage(
 			redis.log(redis.LOG_NOTICE, "got pageKey and score", pageKey, ARGV[2])
 		end
 		local res = redis.call("ZADD", KEYS[2], ARGV[2], pageKey)
-		if res ~= 1 then
-			return {err = string.format("failed to set new value to pageList with pageKey: %s, score", pageKey, ARGV[2])}
-		end
 
 		-- set key: KEYS[1] to ARGV[1]
-		local res = redis.call("SET", KEYS[2], ARGV[1])
-		if res ~= 1 then
-			return {err = string.format("failed to set page with key: %s", KEY[2])}
-		end
+		redis.call("SET", pageKey, ARGV[1])
+
 		-- Set pageMeta.nextCandidate = ARGV[3] (new candidate)
-		res = redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
-		if res ~= 1 then
-			return {err = string.format("failed to set pageMeta.nextCandidate with key: %s", ARGV[3])}
-		end
+		redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
 		-- Set pageMeta.tail = pageKey
-		res = redis.call("HSET", KEYS[1], "tail", pageKey)
-		if res ~= 1 then
-			return {err = string.format("failed to set pageMeta.tail with key: %s", pageKey)}
-		end
+		redis.call("HSET", KEYS[1], "tail", pageKey)
 
 		redis.log(redis.LOG_NOTICE, "doneWithValue", ARGV[1])
+
+		return {ok = "status"}	
 	`)
 
 	b, err := json.Marshal(p)
