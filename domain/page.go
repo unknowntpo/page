@@ -16,7 +16,7 @@ type PageUsecase interface {
 
 type PageRepo interface {
 	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
-	GetHead(ctx context.Context, listKey ListKey) (PageKey, error)
+	GetHead(ctx context.Context, userID int64, listKey ListKey) (PageKey, error)
 	SetPage(ctx context.Context, userID int64, listkey ListKey, page Page) error
 }
 
@@ -36,7 +36,7 @@ type Article struct {
 }
 
 func GeneratePageKey() PageKey {
-	return PageKey(uuid.NewString())
+	return PageKey("page:" + uuid.NewString())
 }
 
 func GenerateListKeyByUserID(listKey ListKey, userID int64) ListKey {

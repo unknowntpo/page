@@ -3,7 +3,7 @@ package redis
 import (
 	"context"
 
-	"github.com/unknowntpo/page/internal/infra"
+	"github.com/unknowntpo/page/infra"
 
 	"github.com/redis/go-redis/v9"
 )

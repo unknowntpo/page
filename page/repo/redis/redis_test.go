@@ -31,6 +31,9 @@ var _ = Describe("PageRepo", func() {
 			pages   []domain.Page
 			listKey domain.ListKey
 		)
+		const (
+			userID int64 = 33
+		)
 		BeforeEach(func() {
 			listKey = domain.ListKey("testList")
 			pages = []domain.Page{
@@ -60,7 +63,7 @@ var _ = Describe("PageRepo", func() {
 
 			// set pages to list
 			for _, p := range pages {
-				Expect(repo.SetPage(context.Background(), 33, listKey, p)).ShouldNot(HaveOccurred())
+				Expect(repo.SetPage(context.Background(), userID, listKey, p)).ShouldNot(HaveOccurred())
 			}
 		})
 		When("Call SetPage for every page", func() {
@@ -71,7 +74,7 @@ var _ = Describe("PageRepo", func() {
 				err      error
 			)
 			BeforeEach(func() {
-				gotHead, err = repo.GetHead(context.Background(), listKey)
+				gotHead, err = repo.GetHead(context.Background(), userID, listKey)
 				Expect(err).ShouldNot(HaveOccurred())
 
 				curPageKey := gotHead
