@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: page/page.proto
+// source: internal/api/page/grpc/page/page.proto
 
 package page
 
@@ -266,5 +266,5 @@ var PageService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "page/page.proto",
+	Metadata: "internal/api/page/grpc/page/page.proto",
 }

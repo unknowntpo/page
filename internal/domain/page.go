@@ -11,19 +11,13 @@ import (
 type PageUsecase interface {
 	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
 	GetHead(ctx context.Context, listKey ListKey) (PageKey, error)
-	SetPage(ctx context.Context, page Page) error
-}
-
-type PageAPI interface {
-	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
-	GetHead(ctx context.Context, listKey ListKey) (PageKey, error)
-	SetPage(ctx context.Context, page Page) error
+	SetPage(ctx context.Context, useID int64, listKey ListKey, page Page) error
 }
 
 type PageRepo interface {
 	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
 	GetHead(ctx context.Context, listKey ListKey) (PageKey, error)
-	SetPage(ctx context.Context, listkey ListKey, page Page) error
+	SetPage(ctx context.Context, userID int64, listkey ListKey, page Page) error
 }
 
 type Page struct {

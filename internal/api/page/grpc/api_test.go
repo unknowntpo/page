@@ -20,7 +20,7 @@ func TestPageAPI(t *testing.T) {
 
 var _ = Describe("PageAPI", func() {
 	var (
-		api             domain.PageAPI
+		api             *page.PageServer
 		mockPageUsecase *mock.MockPageUsecase
 		gotPageKey      domain.PageKey
 	)
@@ -32,7 +32,7 @@ var _ = Describe("PageAPI", func() {
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		mockPageUsecase = mock.NewMockPageUsecase(ctrl)
-		api = page.NewPageAPI(mockPageUsecase)
+		api = page.NewPageServer(mockPageUsecase)
 	})
 
 	When("api.GetHead is called", func() {
