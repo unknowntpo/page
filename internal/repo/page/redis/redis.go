@@ -2,9 +2,10 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/unknowntpo/page/internal/domain"
 
 	"github.com/redis/go-redis/v9"
@@ -39,110 +40,82 @@ func (r *pageRepoImpl) SetPage(
 	listKey domain.ListKey,
 	p domain.Page,
 ) error {
+	return r.setPage(ctx, userID, listKey, p)
+}
+
+func (r *pageRepoImpl) setPage(
+	ctx context.Context,
+	userID int64,
+	listKey domain.ListKey,
+	p domain.Page,
+) error {
 	// implementation
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
-	pageKey := domain.GeneratePageKey()
-	// member := redis.Z{
-	// 	Score:  float64(time.Now().Unix()),
-	// 	Member: pageKey,
-	// }
-	// if err := r.client.ZAdd(ctx, string(listKeyByUser), member).Err(); err != nil {
-	// 	return errors.Wrap(err, "failed on r.client.ZAdd for listKeyByUser(%s)", listKeyByUser)
-	// }
-	// Get Latest Key, then Set page.Next to this PageKey,
-	// Finally set it to list:<ListKey> and Hash
-	// if err := r.client.ZMScore(ctx, string(pageKey), p, domain.DefaultPageTTL).Err(); err != nil {
-	// 	return errors.Wrap(err, "failed on r.client.ZAdd for listKeyByUser(%s)", listKeyByUser)
-	// }
+	headIfHashMapNotExist := domain.GeneratePageKey()
+	nextCandidate := domain.GeneratePageKey()
+	pageMetaKey := domain.GeneratePageMetaKeyByUserID(listKey, userID)
 
-	// if err := r.client.Set(ctx, string(pageKey), p, domain.DefaultPageTTL).Err(); err != nil {
-	// 	return errors.Wrap(err, "failed on r.client.ZAdd for listKeyByUser(%s)", listKeyByUser)
-	// }
-	// return nil
+	// Create a Lua script to get the max score and add a new value
+	script := redis.NewScript(`
+		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1], KEYS[2])
+		redis.log(redis.LOG_NOTICE, "got ARGV", ARGV[1], ARGV[2], ARGV[3])
 
-	// pageList
-	// pageMeta: stores key, head, tail, nextCandidate
-	// pageKey -> data
+		-- Add pageMeta.nextCandidate to sorted set pageList with score: ARGV[2]
+		local pageKey
+		if redis.call("EXISTS", KEYS[1]) == 0 then
+			-- HashMap doesn't exist, create new one 
+			redis.call("HSET", KEYS[1], "head", ARGV[4])
+			redis.call("HSET", KEYS[1], "tail", ARGV[4])
+			redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
+			pageKey = ARGV[3]
+		else
+			pageKey = redis.call("HGET", KEYS[1], "nextCandidate")
+			redis.log(redis.LOG_NOTICE, "got pageKey and score", pageKey, ARGV[2])
+		end
+		local res = redis.call("ZADD", KEYS[2], ARGV[2], pageKey)
+		if res ~= 1 then
+			return {err = string.format("failed to set new value to pageList with pageKey: %s, score", pageKey, ARGV[2])}
+		end
 
-	// Watch the sorted set
-	if err := r.client.Watch(ctx, func(tx *redis.Tx) error {
-		_, err := tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-			list, err := addPageToList(pipe, listKey)
-			if err != nil {
-				return err
-			}
+		-- set key: KEYS[1] to ARGV[1]
+		local res = redis.call("SET", KEYS[2], ARGV[1])
+		if res ~= 1 then
+			return {err = string.format("failed to set page with key: %s", KEY[2])}
+		end
+		-- Set pageMeta.nextCandidate = ARGV[3] (new candidate)
+		res = redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
+		if res ~= 1 then
+			return {err = string.format("failed to set pageMeta.nextCandidate with key: %s", ARGV[3])}
+		end
+		-- Set pageMeta.tail = pageKey
+		res = redis.call("HSET", KEYS[1], "tail", pageKey)
+		if res ~= 1 then
+			return {err = string.format("failed to set pageMeta.tail with key: %s", pageKey)}
+		end
 
-			next, err := list.GetNextCandidate()
-			if err != nil {
-				return err
-			}
+		redis.log(redis.LOG_NOTICE, "doneWithValue", ARGV[1])
+	`)
 
-			p.NextPage = next
-
-			if err := list.SetPage(p); err != nil {
-				return err
-			}
-
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-
-		// if _, err := tx.TxPipelined(ctx, func(pipe redis.Pipeline) error {
-		// 	_ = pipe
-
-		// 	list, err := createListIfNotExist(pipe)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	next, err := list.GetNextCandidate()
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	p.NextPage = next
-
-		// 	if err := list.SetPage(p); err != nil {
-		// 		return err
-		// 	}
-
-		// 	return nil
-		// }); err != nil {
-		// 	return err
-		// }
-	}, string(listKeyByUser), string(pageKey)); err != nil {
+	b, err := json.Marshal(p)
+	if err != nil {
 		return err
 	}
+
+	keys := []string{string(pageMetaKey), string(listKeyByUser)}
+	args := []any{
+		string(b),
+		time.Now().Unix(),
+		string(nextCandidate),
+		string(headIfHashMapNotExist),
+	}
+
+	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
+	if err != nil {
+		return err
+	}
+
+	// Print the result
+	fmt.Printf("Result: %v", result)
+
 	return nil
 }
-
-func addPageToList(ctx context.Context, pipe redis.Pipeliner, pageKey domain.PageKey, listKeyByUser domain.ListKey) (list, error) {
-	member := redis.Z{
-		Score:  float64(time.Now().Unix()),
-		Member: pageKey,
-	}
-	if err := pipe.ZAdd(ctx, string(listKeyByUser), member).Err(); err != nil {
-		return list{}, errors.Wrap(err, "failed on r.client.ZAdd for listKeyByUser(%s)", listKeyByUser)
-	}
-}
-
-// list represent the list in redis,
-type list struct {
-	Key           domain.ListKey
-	Head          domain.PageKey
-	Tail          domain.PageKey
-	NextCandidate domain.PageKey
-}
-
-func (l *list) SetPage(pipe *redis.Pipeliner, pageKey domain.PageKey) error {
-	//
-	return nil
-}
-
-//
-// list of pages in this list
-// type pageList struct{}
-// type pageMeta struct{}

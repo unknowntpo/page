@@ -27,6 +27,7 @@ type Page struct {
 }
 
 type PageKey string
+type PageMetaKey string
 type ListKey string
 
 type Article struct {
@@ -40,6 +41,10 @@ func GeneratePageKey() PageKey {
 
 func GenerateListKeyByUserID(listKey ListKey, userID int64) ListKey {
 	return ListKey(fmt.Sprintf("%s:%d", listKey, userID))
+}
+
+func GeneratePageMetaKeyByUserID(listKey ListKey, userID int64) PageMetaKey {
+	return PageMetaKey(fmt.Sprintf("%s-meta:%d", listKey, userID))
 }
 
 const (
