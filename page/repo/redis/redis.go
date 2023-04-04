@@ -8,6 +8,8 @@ import (
 
 	"github.com/unknowntpo/page/domain"
 
+	"github.com/unknowntpo/page/pkg/errors"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -22,9 +24,21 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 
 func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
 	// implementation
-
-	// if page doesn't exist, return PageDoesNotExist error
-	return domain.Page{}, nil
+	pageKeyStr := domain.BuildRedisPageKeyStr(pageKey)
+	pageStr, err := r.client.Get(ctx, pageKeyStr).Result()
+	if err != nil {
+		switch err {
+		case redis.Nil:
+			return domain.Page{}, errors.Wrap(errors.NotFound, "", err)
+		default:
+			return domain.Page{}, errors.Wrap(errors.Internal, "failed on r.client.Get", err)
+		}
+	}
+	p := domain.Page{}
+	if err := json.Unmarshal([]byte(pageStr), &p); err != nil {
+		return domain.Page{}, errors.Wrap(errors.Internal, "failed on json.Unmarshal", err)
+	}
+	return p, nil
 }
 
 func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain.ListKey) (domain.PageKey, error) {

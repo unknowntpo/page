@@ -39,6 +39,10 @@ func GeneratePageKey() PageKey {
 	return PageKey("page:" + uuid.NewString())
 }
 
+func BuildRedisPageKeyStr(pageKey PageKey) string {
+	return "page:" + string(pageKey)
+}
+
 func GenerateListKeyByUserID(listKey ListKey, userID int64) ListKey {
 	return ListKey(fmt.Sprintf("%s:%d", listKey, userID))
 }

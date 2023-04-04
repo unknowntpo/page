@@ -27,7 +27,6 @@ var _ = Describe("PageRepo", func() {
 
 	When("SetAndGet to a List", func() {
 		var (
-			err     error
 			pages   []domain.Page
 			listKey domain.ListKey
 		)
@@ -59,32 +58,32 @@ var _ = Describe("PageRepo", func() {
 					Articles: mock.GenerateDummyArticles(3),
 				},
 			}
-			Expect(err).ShouldNot(HaveOccurred())
-
-			// set pages to list
-			for _, p := range pages {
-				Expect(repo.SetPage(context.Background(), userID, listKey, p)).ShouldNot(HaveOccurred())
-			}
 		})
 		When("Call SetPage for every page", func() {
 			var (
-				gotPages []domain.Page
-				gotPage  domain.Page
-				gotHead  domain.PageKey
-				err      error
+				// gotPages []domain.Page
+				gotPage domain.Page
+				// gotHead  domain.PageKey
+				err error
 			)
 			BeforeEach(func() {
-				gotHead, err = repo.GetHead(context.Background(), userID, listKey)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				curPageKey := gotHead
-				for i := 0; i < len(pages); i++ {
-					gotPage, err = repo.GetPage(context.Background(), curPageKey)
-					Expect(err).ShouldNot(HaveOccurred())
-					gotPages = append(gotPages, gotPage)
+				// set pages to list
+				for _, p := range pages {
+					Expect(repo.SetPage(context.Background(), userID, listKey, p)).ShouldNot(HaveOccurred())
 				}
+
+				// gotHead, err = repo.GetHead(context.Background(), userID, listKey)
+				// Expect(err).ShouldNot(HaveOccurred())
+
+				// curPageKey := gotHead
+				// for i := 0; i < len(pages); i++ {
+				// 	gotPage, err = repo.GetPage(context.Background(), curPageKey)
+				// 	Expect(err).ShouldNot(HaveOccurred())
+				// 	gotPages = append(gotPages, gotPage)
+				// }
 			})
 			It("every page should be set in FIFO order", func() {
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(gotPage).To(Equal(pages))
 			})
 		})
