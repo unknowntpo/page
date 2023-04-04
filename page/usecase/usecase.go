@@ -14,6 +14,10 @@ func NewPageUsecase() domain.PageUsecase {
 	return &pageUsecaseImpl{}
 }
 
+func (u *pageUsecaseImpl) NewList(ctx context.Context, userID int64, listKey domain.ListKey) error {
+	return nil
+}
+
 func (u *pageUsecaseImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
 	// implementation
 	return domain.Page{}, nil

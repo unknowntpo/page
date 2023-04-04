@@ -18,11 +18,41 @@ func TestRedisRepo(t *testing.T) {
 }
 
 var _ = Describe("PageRepo", func() {
-	var repo domain.PageRepo
+	var (
+		repo   domain.PageRepo
+		client *redis.Client
+	)
 
 	BeforeEach(func() {
-		client := PrepareTestDatabase()
+		client = PrepareTestDatabase()
 		repo = NewPageRepo(client)
+	})
+
+	Context("NewList is called", func() {
+		var (
+			listKey domain.ListKey
+		)
+		const (
+			userID int64 = 33
+		)
+		BeforeEach(func() {
+			listKey = domain.ListKey("testList")
+			Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
+		})
+		It("should initialize data structures for list", func() {
+			assertFn := func() {
+				// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
+				res, err := client.HGetAll(
+					context.Background(),
+					string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
+				).Result()
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(res["head"]).To(Equal(""))
+				Expect(res["tail"]).To(Equal(""))
+				Expect(res["nextCandidate"]).To(Equal(""))
+			}
+			assertFn()
+		})
 	})
 
 	When("SetAndGet to a List", func() {

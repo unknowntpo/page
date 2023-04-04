@@ -13,7 +13,7 @@ Dcard Interview Repo
 3) "tail"
 4) ""
 5) "nextCandidate"
-6) "page:265fff6b-927a-45dd-8985-38f16b3d4516"
+6) ""
 127.0.0.1:6379>
 ```
 
@@ -25,6 +25,8 @@ Assume we need to
 - Get candidate pageKey from `<listKey>-meta:<userID>`, e.g. `page:43147719-0af6-4701-8c7b-0f63d95677d1`
 - Call `SET <pageKey>` to set data with 1 Day TTL, e.g. `SET page:43147719-0af6-4701-8c7b-0f63d95677d1 <actual-data> EX 86400`
 - Concate the linked-list by modifying `tail`, `nextCandidate` of `ListMeta:<userID>`
+
+NOTE: SetPage will also set `<listKey>-meta:<userID>.nextCandidate` to next pageKey and the `next` field of current page.
 
 ```
 zrange testList:33 0 +inf byscore

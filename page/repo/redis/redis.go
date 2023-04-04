@@ -22,6 +22,10 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 	return &pageRepoImpl{client: c}
 }
 
+func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain.ListKey) error {
+	return nil
+}
+
 func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
 	// implementation
 	pageStr, err := r.client.Get(ctx, string(pageKey)).Result()
@@ -42,7 +46,7 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 
 func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain.ListKey) (domain.PageKey, error) {
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
-	pageMetaKey := domain.GeneratePageMetaKeyByUserID(listKey, userID)
+	pageMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
 
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(`
@@ -106,7 +110,7 @@ func (r *pageRepoImpl) setPage(
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
 	headIfHashMapNotExist := domain.GeneratePageKey()
 	nextCandidate := domain.GeneratePageKey()
-	pageMetaKey := domain.GeneratePageMetaKeyByUserID(listKey, userID)
+	pageMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
 
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(`
