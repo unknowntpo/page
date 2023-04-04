@@ -9,7 +9,7 @@ import (
 	pageAPI "github.com/unknowntpo/page/page/api/grpc"
 	pageUcase "github.com/unknowntpo/page/page/usecase"
 
-	"github.com/unknowntpo/page/gen/page/api/grpc/page/pageconnect"
+	"github.com/unknowntpo/page/gen/proto/page/pageconnect"
 )
 
 // func main() {

@@ -1,11 +1,16 @@
-package page_test
+package page
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/unknowntpo/page/internal/domain"
-	"github.com/unknowntpo/page/internal/domain/mock"
+	connect "github.com/bufbuild/connect-go"
+	"github.com/unknowntpo/page/domain"
+	"github.com/unknowntpo/page/domain/mock"
+	pb "github.com/unknowntpo/page/gen/proto/page"
+	"github.com/unknowntpo/page/gen/proto/page/pageconnect"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -17,11 +22,13 @@ func TestPageAPI(t *testing.T) {
 	RunSpecs(t, "PageAPI")
 }
 
-var _ = Describe("PageAPI", func() {
+// Ref: https://github.com/bufbuild/connect-demo/blob/main/main_test.go
+var _ = Describe("PageAPI", Ordered, func() {
 	var (
-		api             *page.PageServer
+		mux             *http.ServeMux
+		server          *httptest.Server
+		client          pageconnect.PageServiceClient
 		mockPageUsecase *mock.MockPageUsecase
-		gotPageKey      domain.PageKey
 	)
 
 	const (
@@ -29,27 +36,53 @@ var _ = Describe("PageAPI", func() {
 		dummyHeadPageKey domain.PageKey = "dummy"
 	)
 	BeforeEach(func() {
+		// Set up mock usecase
 		ctrl := gomock.NewController(GinkgoT())
 		mockPageUsecase = mock.NewMockPageUsecase(ctrl)
-		api = page.NewPageServer(mockPageUsecase)
+
+		// Start mux
+		mux = http.NewServeMux()
+		mux.Handle(pageconnect.NewPageServiceHandler(
+			NewPageServer(mockPageUsecase),
+		))
+		// Start test server
+		server = httptest.NewUnstartedServer(mux)
+		server.EnableHTTP2 = true
+		server.StartTLS()
 	})
 
-	When("api.GetHead is called", func() {
+	BeforeEach(func() {
+		client = pageconnect.NewPageServiceClient(
+			server.Client(),
+			server.URL,
+			connect.WithGRPC(),
+		)
+	})
+
+	AfterEach(func() {
+		server.Close()
+	})
+
+	When("GetHead is called", func() {
 		var (
 			err error
+			res *connect.Response[pb.GetHeadResponse]
 		)
 		BeforeEach(func() {
 			mockPageUsecase.
 				EXPECT().
-				GetHead(context.Background(), testListKey).
+				GetHead(gomock.Any(), testListKey).
 				Return(dummyHeadPageKey, nil).Times(1)
 		})
 		BeforeEach(func() {
-			gotPageKey, err = api.GetHead(context.Background(), testListKey)
+			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
+				ListKey: string(testListKey),
+				UserID:  33,
+			}))
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 		It("should return expected PageKey", func() {
-			Expect(gotPageKey).To(Equal(dummyHeadPageKey))
+			Expect(res.Msg.PageKey).To(Equal(string(dummyHeadPageKey)))
 		})
 	})
 })
