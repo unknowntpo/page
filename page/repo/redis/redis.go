@@ -24,8 +24,7 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 
 func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
 	// implementation
-	pageKeyStr := domain.BuildRedisPageKeyStr(pageKey)
-	pageStr, err := r.client.Get(ctx, pageKeyStr).Result()
+	pageStr, err := r.client.Get(ctx, string(pageKey)).Result()
 	if err != nil {
 		switch err {
 		case redis.Nil:
@@ -69,6 +68,8 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 			redis.call("HSET", KEYS[1], "head", headPageKey)
 		end
 
+		redis.log(redis.LOG_NOTICE, "after check, got headPageKey", headPageKey)
+
 		return headPageKey
 	`)
 
@@ -79,10 +80,10 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
 	}
 
-	fmt.Println("got pageHead", result)
+	fmt.Println("\ngot pageHead", result.(string))
 	return domain.PageKey(result.(string)), nil
 }
 

@@ -61,10 +61,10 @@ var _ = Describe("PageRepo", func() {
 		})
 		When("Call SetPage for every page", func() {
 			var (
-				// gotPages []domain.Page
-				gotPage domain.Page
-				// gotHead  domain.PageKey
-				err error
+				gotPages []domain.Page
+				gotPage  domain.Page
+				gotHead  domain.PageKey
+				err      error
 			)
 			BeforeEach(func() {
 				// set pages to list
@@ -81,6 +81,17 @@ var _ = Describe("PageRepo", func() {
 				// 	Expect(err).ShouldNot(HaveOccurred())
 				// 	gotPages = append(gotPages, gotPage)
 				// }
+			})
+			BeforeEach(func() {
+				gotHead, err = repo.GetHead(context.Background(), userID, listKey)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				curPageKey := gotHead
+				for i := 0; i < len(pages); i++ {
+					gotPage, err = repo.GetPage(context.Background(), curPageKey)
+					Expect(err).ShouldNot(HaveOccurred())
+					gotPages = append(gotPages, gotPage)
+				}
 			})
 			It("every page should be set in FIFO order", func() {
 				Expect(err).ShouldNot(HaveOccurred())
