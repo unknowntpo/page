@@ -20,5 +20,9 @@ Time complexity: `O(1)`
 - Call `Set page:pageKey` to set data with 1 Day TTL
 - Concate the linked-list by modifying `tail`, `nextCandidate` of `ListMeta:<userID>`
 
+## TODO: ScyllaDB
 
+Pros:
+- Cloud native, high availability, don't need to worry about sharding things.
+- 
 
