@@ -23,7 +23,7 @@ func TestPageAPI(t *testing.T) {
 }
 
 // Ref: https://github.com/bufbuild/connect-demo/blob/main/main_test.go
-var _ = Describe("PageAPI", Ordered, func() {
+var _ = Describe("PageAPI", func() {
 	var (
 		mux             *http.ServeMux
 		server          *httptest.Server
