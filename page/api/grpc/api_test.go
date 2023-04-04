@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	page "github.com/unknowntpo/page/internal/api/page/grpc"
 	"github.com/unknowntpo/page/internal/domain"
 	"github.com/unknowntpo/page/internal/domain/mock"
 

@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package page;
+
+option go_package = "github.com/unknowntpo/page/gen/proto/page";
+
+service PageService {
+    rpc GetHead(GetHeadRequest) returns (GetHeadResponse) {}
+    rpc GetPage(stream GetPageRequest) returns (stream GetPageResponse) {}
+    rpc SetPage(stream SetPageRequest) returns (stream SetPageResponse) {}
+}
+
+message GetHeadRequest {
+    string listKey = 1;
+    int64 userID = 2;
+}
+
+message GetHeadResponse {
+    string pageKey = 1;
+}
+
+message GetPageRequest {
+    string pageKey = 1;
+}
+
+message GetPageResponse {
+    string pageContent = 1;
+    string next = 2;
+}
+
+message SetPageRequest {
+    string pageContent = 1;
+}
+
+message SetPageResponse {
+    string pageKey = 1;
+}
