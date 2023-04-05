@@ -13,10 +13,10 @@ type myError struct {
 type Kind string
 
 const (
-	NotFound             Kind = "NotFound"
-	BadRequest           Kind = "BadRequest"
-	Internal             Kind = "Internal"
-	ResourceAlreadyExist Kind = "ResourceAlreadyExist"
+	NotFound             Kind = "builtin.NotFound"
+	BadRequest           Kind = "builtin.BadRequest"
+	Internal             Kind = "builtin.Internal"
+	ResourceAlreadyExist Kind = "builtin.ResourceAlreadyExist"
 )
 
 func (k Kind) String() string {
