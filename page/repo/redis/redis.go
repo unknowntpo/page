@@ -174,6 +174,11 @@ func (r *pageRepoImpl) setPage(
 		-- set key: KEYS[1] to ARGV[1] with 1 day TTL
 		redis.call("SET", ARGV[4], ARGV[1], "EX", "86400")
 
+		-- Set pageMeta.head = pageKey if there's no element in list (head == "")
+		if redis.call("HGET", KEYS[1], "head") == "" then
+			redis.call("HSET", KEYS[1], "head", pageKey)
+		end
+
 		-- Set pageMeta.nextCandidate = ARGV[3] (new candidate)
 		redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
 		-- Set pageMeta.tail = pageKey
