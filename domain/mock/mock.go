@@ -3,17 +3,7 @@ package mock
 import (
 	"math/rand"
 	"time"
-
-	"github.com/unknowntpo/page/domain"
 )
-
-func GenerateDummyArticles(length int) []domain.Article {
-	out := make([]domain.Article, 0, length)
-	for i := 0; i < length; i++ {
-		out = append(out, domain.Article{Title: GenerateRandomString(10), Content: GenerateRandomString(10)})
-	}
-	return out
-}
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 

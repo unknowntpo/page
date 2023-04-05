@@ -80,11 +80,12 @@ func (mr *MockPageUsecaseMockRecorder) NewList(ctx, userID, listKey interface{})
 }
 
 // SetPage mocks base method.
-func (m *MockPageUsecase) SetPage(ctx context.Context, userID int64, listKey domain.ListKey, page domain.Page) error {
+func (m *MockPageUsecase) SetPage(ctx context.Context, userID int64, listKey domain.ListKey, page domain.Page) (domain.PageKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPage", ctx, userID, listKey, page)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(domain.PageKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SetPage indicates an expected call of SetPage.

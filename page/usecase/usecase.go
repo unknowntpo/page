@@ -28,7 +28,7 @@ func (u *pageUsecaseImpl) GetHead(ctx context.Context, listKey domain.ListKey) (
 	return domain.PageKey("abc"), nil
 }
 
-func (u *pageUsecaseImpl) SetPage(ctx context.Context, userID int64, listKey domain.ListKey, page domain.Page) error {
+func (u *pageUsecaseImpl) SetPage(ctx context.Context, userID int64, listKey domain.ListKey, page domain.Page) (domain.PageKey, error) {
 	// implementation
-	return nil
+	return "", nil
 }

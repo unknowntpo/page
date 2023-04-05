@@ -11,7 +11,7 @@ import (
 type PageUsecase interface {
 	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
 	GetHead(ctx context.Context, listKey ListKey) (PageKey, error)
-	SetPage(ctx context.Context, userID int64, listKey ListKey, page Page) error
+	SetPage(ctx context.Context, userID int64, listKey ListKey, page Page) (PageKey, error)
 	NewList(ctx context.Context, userID int64, listKey ListKey) error
 }
 
@@ -24,8 +24,12 @@ type PageRepo interface {
 
 type Page struct {
 	Key      PageKey
-	Articles []Article
+	Content  string
 	NextPage PageKey
+}
+
+func (p *Page) SetContent(c string) {
+	p.Content = c
 }
 
 type PageKey string

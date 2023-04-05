@@ -138,22 +138,22 @@ var _ = Describe("PageRepo", func() {
 					// Key      PageKey
 					// Articles []Article
 					// NextPage PageKey
-					Key:      domain.GeneratePageKey(),
-					Articles: mock.GenerateDummyArticles(3),
+					Key:     domain.GeneratePageKey(),
+					Content: mock.GenerateRandomString(3),
 				},
 				{
 					// Key      PageKey
 					// Articles []Article
 					// NextPage PageKey
-					Key:      domain.GeneratePageKey(),
-					Articles: mock.GenerateDummyArticles(3),
+					Key:     domain.GeneratePageKey(),
+					Content: mock.GenerateRandomString(3),
 				},
 				{
 					// Key      PageKey
 					// Articles []Article
 					// NextPage PageKey
-					Key:      domain.GeneratePageKey(),
-					Articles: mock.GenerateDummyArticles(3),
+					Key:     domain.GeneratePageKey(),
+					Content: mock.GenerateRandomString(3),
 				},
 			}
 		})
