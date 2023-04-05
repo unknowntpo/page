@@ -46,11 +46,11 @@ func BuildRedisPageKeyStr(pageKey PageKey) string {
 }
 
 func GenerateListKeyByUserID(listKey ListKey, userID int64) ListKey {
-	return ListKey(fmt.Sprintf("%s:%d", listKey, userID))
+	return ListKey(fmt.Sprintf("pageList:%s:%d", listKey, userID))
 }
 
 func GenerateListMetaKeyByUserID(listKey ListKey, userID int64) PageMetaKey {
-	return PageMetaKey(fmt.Sprintf("%s-meta:%d", listKey, userID))
+	return PageMetaKey(fmt.Sprintf("listMeta:%s:%d", listKey, userID))
 }
 
 const (

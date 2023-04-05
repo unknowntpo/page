@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/redis/go-redis/v9"
@@ -47,9 +48,19 @@ var _ = Describe("PageRepo", func() {
 					string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
 				).Result()
 				Expect(err).ShouldNot(HaveOccurred())
-				Expect(res["head"]).To(Equal(""))
-				Expect(res["tail"]).To(Equal(""))
-				Expect(res["nextCandidate"]).To(Equal(""))
+				fmt.Println("got res", res)
+
+				head, ok := res["head"]
+				Expect(ok).To(BeTrue())
+				Expect(head).To(Equal(""))
+
+				tail, ok := res["tail"]
+				Expect(ok).To(BeTrue())
+				Expect(tail).To(Equal(""))
+
+				nextCandidate, ok := res["nextCandidate"]
+				Expect(ok).To(BeTrue())
+				Expect(nextCandidate).To(Equal(""))
 			}
 			assertFn()
 		})

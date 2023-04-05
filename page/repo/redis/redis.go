@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/unknowntpo/page/domain"
@@ -23,6 +24,35 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 }
 
 func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain.ListKey) error {
+	listMetaKeyByUser := domain.GenerateListMetaKeyByUserID(listKey, userID)
+
+	// Create a Lua script to get the max score and add a new value
+	script := redis.NewScript(`
+		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1])
+
+		-- KEYS[1]: listMetaKeyByUser
+
+		-- if listMeta exist, return error
+		if redis.call("EXISTS", KEYS[1]) == 1 then
+			return {err = "list has already exist"}
+		end
+		-- init listMeta, set head, tail, nextCandidate to ""
+		redis.call("HSET", KEYS[1], "head", "", "tail", "", "nextCandidate", "")
+
+		return {ok = "status"}
+	`)
+
+	keys := []string{string(listMetaKeyByUser)}
+
+	_, err := script.Run(context.Background(), r.client, keys).Result()
+	if err != nil {
+		switch {
+		case strings.Contains(err.Error(), "list has already exist"):
+			return errors.Wrap(errors.ResourceAlreadyExist, fmt.Sprintf("pageList %s for userID [%d] has already exist", listKey, userID), err)
+		default:
+			return errors.Wrap(errors.Internal, " failed on script.Run", err)
+		}
+	}
 	return nil
 }
 
@@ -46,7 +76,7 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 
 func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain.ListKey) (domain.PageKey, error) {
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
-	pageMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
+	listMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
 
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(`
@@ -77,7 +107,7 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 		return headPageKey
 	`)
 
-	keys := []string{string(pageMetaKey), string(listKeyByUser)}
+	keys := []string{string(listMetaKey), string(listKeyByUser)}
 	args := []any{
 		time.Now().Unix(),
 	}

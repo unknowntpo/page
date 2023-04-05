@@ -10,13 +10,18 @@ type myError struct {
 	prevError error
 }
 
-type Kind int
+type Kind string
 
 const (
-	NotFound Kind = iota
-	BadRequest
-	Internal
+	NotFound             Kind = "NotFound"
+	BadRequest           Kind = "BadRequest"
+	Internal             Kind = "Internal"
+	ResourceAlreadyExist Kind = "ResourceAlreadyExist"
 )
+
+func (k Kind) String() string {
+	return string(k)
+}
 
 func New(kind Kind, message string) error {
 	return &myError{kind: kind, message: message}
