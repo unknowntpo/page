@@ -23,19 +23,17 @@ type pageServer struct {
 	useCase domain.PageUsecase
 }
 
-// GetHead(context.Context, *connect_go.Request[page.GetHeadRequest]) (*connect_go.Response[page.GetHeadResponse], error)
-// GetPage(context.Context, *connect_go.BidiStream[page.GetPageRequest, page.GetPageResponse]) error
-// SetPage(context.Context, *connect_go.BidiStream[page.Page, page.SetPageResponse]) error
-
-// GetHead(context.Context, *connect_go.Request[page.GetHeadRequest], *connect_go.ServerStream[page.PageKey]) error
-// GetPage(context.Context, *connect_go.BidiStream[page.PageKey, page.Page]) error
-// SetPage(context.Context, *connect_go.ClientStream[page.Page]) (*connect_go.Response[page.PageKey], error)
-
-// type PageServiceHandler interface {
-// 	GetHead(context.Context, *connect_go.Request[page.GetHeadRequest]) (*connect_go.Response[page.GetHeadResponse], error)
-// 	GetPage(context.Context, *connect_go.BidiStream[page.GetPageRequest, page.GetPageResponse]) error
-// 	SetPage(context.Context, *connect_go.BidiStream[page.Page, page.SetPageResponse]) error
-// }
+func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewListRequest]) (*connect.Response[pb.NewListResponse], error) {
+	if err := s.useCase.NewList(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey)); err != nil {
+		log.Println("failed on s.useCase.GetHead", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.New(errors.Internal, "something goes wrong"))
+	}
+	res := connect.NewResponse(&pb.NewListResponse{
+		Status: "OK",
+	})
+	res.Header().Set("Page-Version", "v1")
+	return res, nil
+}
 
 func (s *pageServer) GetHead(ctx context.Context, req *connect.Request[pb.GetHeadRequest]) (*connect.Response[pb.GetHeadResponse], error) {
 	log.Println("Request headers: ", req.Header())

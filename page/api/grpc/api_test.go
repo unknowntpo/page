@@ -34,6 +34,7 @@ var _ = Describe("PageAPI", func() {
 	const (
 		testListKey      domain.ListKey = "testListKey"
 		dummyHeadPageKey domain.PageKey = "dummy"
+		userID           int64          = 33
 	)
 	BeforeEach(func() {
 		// Set up mock usecase
@@ -61,6 +62,29 @@ var _ = Describe("PageAPI", func() {
 
 	AfterEach(func() {
 		server.Close()
+	})
+
+	When("NewList is called", func() {
+		var (
+			err error
+			res *connect.Response[pb.NewListResponse]
+		)
+		BeforeEach(func() {
+			mockPageUsecase.
+				EXPECT().
+				NewList(gomock.Any(), userID, testListKey).
+				Return(nil).Times(1)
+		})
+		BeforeEach(func() {
+			res, err = client.NewList(context.Background(), connect.NewRequest(&pb.NewListRequest{
+				ListKey: string(testListKey),
+				UserID:  userID,
+			}))
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+		It("should return OK", func() {
+			Expect(res.Msg.Status).To(Equal("OK"))
+		})
 	})
 
 	When("GetHead is called", func() {

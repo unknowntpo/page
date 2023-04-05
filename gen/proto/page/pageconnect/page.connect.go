@@ -27,6 +27,7 @@ const (
 
 // PageServiceClient is a client for the page.PageService service.
 type PageServiceClient interface {
+	NewList(context.Context, *connect_go.Request[page.NewListRequest]) (*connect_go.Response[page.NewListResponse], error)
 	GetHead(context.Context, *connect_go.Request[page.GetHeadRequest]) (*connect_go.Response[page.GetHeadResponse], error)
 	GetPage(context.Context) *connect_go.BidiStreamForClient[page.GetPageRequest, page.GetPageResponse]
 	SetPage(context.Context) *connect_go.BidiStreamForClient[page.SetPageRequest, page.SetPageResponse]
@@ -42,6 +43,11 @@ type PageServiceClient interface {
 func NewPageServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) PageServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &pageServiceClient{
+		newList: connect_go.NewClient[page.NewListRequest, page.NewListResponse](
+			httpClient,
+			baseURL+"/page.PageService/NewList",
+			opts...,
+		),
 		getHead: connect_go.NewClient[page.GetHeadRequest, page.GetHeadResponse](
 			httpClient,
 			baseURL+"/page.PageService/GetHead",
@@ -62,9 +68,15 @@ func NewPageServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts
 
 // pageServiceClient implements PageServiceClient.
 type pageServiceClient struct {
+	newList *connect_go.Client[page.NewListRequest, page.NewListResponse]
 	getHead *connect_go.Client[page.GetHeadRequest, page.GetHeadResponse]
 	getPage *connect_go.Client[page.GetPageRequest, page.GetPageResponse]
 	setPage *connect_go.Client[page.SetPageRequest, page.SetPageResponse]
+}
+
+// NewList calls page.PageService.NewList.
+func (c *pageServiceClient) NewList(ctx context.Context, req *connect_go.Request[page.NewListRequest]) (*connect_go.Response[page.NewListResponse], error) {
+	return c.newList.CallUnary(ctx, req)
 }
 
 // GetHead calls page.PageService.GetHead.
@@ -84,6 +96,7 @@ func (c *pageServiceClient) SetPage(ctx context.Context) *connect_go.BidiStreamF
 
 // PageServiceHandler is an implementation of the page.PageService service.
 type PageServiceHandler interface {
+	NewList(context.Context, *connect_go.Request[page.NewListRequest]) (*connect_go.Response[page.NewListResponse], error)
 	GetHead(context.Context, *connect_go.Request[page.GetHeadRequest]) (*connect_go.Response[page.GetHeadResponse], error)
 	GetPage(context.Context, *connect_go.BidiStream[page.GetPageRequest, page.GetPageResponse]) error
 	SetPage(context.Context, *connect_go.BidiStream[page.SetPageRequest, page.SetPageResponse]) error
@@ -96,6 +109,11 @@ type PageServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewPageServiceHandler(svc PageServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
 	mux := http.NewServeMux()
+	mux.Handle("/page.PageService/NewList", connect_go.NewUnaryHandler(
+		"/page.PageService/NewList",
+		svc.NewList,
+		opts...,
+	))
 	mux.Handle("/page.PageService/GetHead", connect_go.NewUnaryHandler(
 		"/page.PageService/GetHead",
 		svc.GetHead,
@@ -116,6 +134,10 @@ func NewPageServiceHandler(svc PageServiceHandler, opts ...connect_go.HandlerOpt
 
 // UnimplementedPageServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedPageServiceHandler struct{}
+
+func (UnimplementedPageServiceHandler) NewList(context.Context, *connect_go.Request[page.NewListRequest]) (*connect_go.Response[page.NewListResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("page.PageService.NewList is not implemented"))
+}
 
 func (UnimplementedPageServiceHandler) GetHead(context.Context, *connect_go.Request[page.GetHeadRequest]) (*connect_go.Response[page.GetHeadResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("page.PageService.GetHead is not implemented"))

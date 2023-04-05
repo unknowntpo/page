@@ -5,9 +5,19 @@ package page;
 option go_package = "github.com/unknowntpo/page/gen/proto/page";
 
 service PageService {
+    rpc NewList(NewListRequest) returns (NewListResponse) {}
     rpc GetHead(GetHeadRequest) returns (GetHeadResponse) {}
     rpc GetPage(stream GetPageRequest) returns (stream GetPageResponse) {}
     rpc SetPage(stream SetPageRequest) returns (stream SetPageResponse) {}
+}
+
+message NewListRequest {
+    string listKey = 1;
+    int64 userID = 2;
+}
+
+message NewListResponse {
+    string status = 1;
 }
 
 message GetHeadRequest {
