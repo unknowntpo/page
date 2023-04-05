@@ -62,7 +62,7 @@ var _ = Describe("PageRepo", func() {
 
 				nextCandidate, ok := res["nextCandidate"]
 				Expect(ok).To(BeTrue())
-				Expect(nextCandidate).To(Equal(""))
+				Expect(nextCandidate).NotTo(Equal(""))
 			}
 			assertFn()
 		})

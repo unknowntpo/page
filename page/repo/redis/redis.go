@@ -25,26 +25,25 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 
 func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain.ListKey) error {
 	listMetaKeyByUser := domain.GenerateListMetaKeyByUserID(listKey, userID)
+	nextCandidate := domain.GeneratePageKey()
+	keys := []string{string(listMetaKeyByUser)}
+	args := []any{string(nextCandidate)}
 
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(`
 		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1])
-
-		-- KEYS[1]: listMetaKeyByUser
 
 		-- if listMeta exist, return error
 		if redis.call("EXISTS", KEYS[1]) == 1 then
 			return {err = "list has already exist"}
 		end
 		-- init listMeta, set head, tail, nextCandidate to ""
-		redis.call("HSET", KEYS[1], "head", "", "tail", "", "nextCandidate", "")
+		redis.call("HSET", KEYS[1], "head", "", "tail", "", "nextCandidate", ARGV[1])
 
 		return {ok = "status"}
 	`)
 
-	keys := []string{string(listMetaKeyByUser)}
-
-	_, err := script.Run(context.Background(), r.client, keys).Result()
+	_, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), "ResourceAlreadyExist"):
