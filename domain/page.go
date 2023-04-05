@@ -18,7 +18,7 @@ type PageUsecase interface {
 type PageRepo interface {
 	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
 	GetHead(ctx context.Context, userID int64, listKey ListKey) (PageKey, error)
-	SetPage(ctx context.Context, userID int64, listkey ListKey, page Page) error
+	SetPage(ctx context.Context, userID int64, listkey ListKey, page Page) (PageKey, error)
 	NewList(ctx context.Context, userID int64, listKey ListKey) error
 }
 

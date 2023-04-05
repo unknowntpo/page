@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/unknowntpo/page/domain"
 	mock "github.com/unknowntpo/page/domain/mock"
+	"github.com/unknowntpo/page/pkg/debug"
 	"github.com/unknowntpo/page/pkg/errors"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -81,11 +82,11 @@ var _ = Describe("PageRepo", func() {
 				// Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
 			})
 			It("should return ResourceNotFound error", func() {
-				err := repo.SetPage(context.Background(), userID, listKey, p)
+				_, err := repo.SetPage(context.Background(), userID, listKey, p)
 				Expect(errors.KindIs(err, errors.ResourceNotFound)).To(BeTrue())
 			})
 		})
-		PContext("NewList has been called before", func() {
+		Context("NewList has been called before", func() {
 			var (
 				listKey domain.ListKey
 			)
@@ -96,104 +97,54 @@ var _ = Describe("PageRepo", func() {
 				listKey = domain.ListKey("testList")
 				Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
 			})
-			It("should initialize data structures for list", func() {
-				assertFn := func() {
+			When("SetPage is called", func() {
+				var (
+					pages []domain.Page
+				)
+				BeforeEach(func() {
+					pages = []domain.Page{
+						{
+							Content: mock.GenerateRandomString(3),
+						},
+						{
+							Content: mock.GenerateRandomString(3),
+						},
+						{
+							Content: mock.GenerateRandomString(3),
+						},
+					}
+					for i := range pages {
+						pageKey, err := repo.SetPage(context.Background(), userID, listKey, pages[i])
+						Expect(err).ShouldNot(HaveOccurred())
+						// Set the pageKey back
+						pages[i].Key = pageKey
+					}
+				})
+
+				It("related data structures should be set", func() {
 					// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
 					res, err := client.HGetAll(
 						context.Background(),
 						string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
 					).Result()
 					Expect(err).ShouldNot(HaveOccurred())
-					fmt.Println("got res", res)
 
+					debug.Debug(pages)
+
+					// head should be set to first element of pages
 					head, ok := res["head"]
 					Expect(ok).To(BeTrue())
-					Expect(head).To(Equal(""))
+					Expect(head).To(Equal(string(pages[0].Key)))
 
+					// tail should be set to last element of pages
 					tail, ok := res["tail"]
 					Expect(ok).To(BeTrue())
-					Expect(tail).To(Equal(""))
+					Expect(tail).To(Equal(string(pages[len(pages)-1].Key)))
 
 					nextCandidate, ok := res["nextCandidate"]
 					Expect(ok).To(BeTrue())
-					Expect(nextCandidate).To(Equal(""))
-				}
-				assertFn()
-			})
-		})
-	})
-
-	When("SetAndGet to a List", func() {
-		var (
-			pages   []domain.Page
-			listKey domain.ListKey
-		)
-		const (
-			userID int64 = 33
-		)
-		BeforeEach(func() {
-			listKey = domain.ListKey("testList")
-			pages = []domain.Page{
-				{
-					// Key      PageKey
-					// Articles []Article
-					// NextPage PageKey
-					Key:     domain.GeneratePageKey(),
-					Content: mock.GenerateRandomString(3),
-				},
-				{
-					// Key      PageKey
-					// Articles []Article
-					// NextPage PageKey
-					Key:     domain.GeneratePageKey(),
-					Content: mock.GenerateRandomString(3),
-				},
-				{
-					// Key      PageKey
-					// Articles []Article
-					// NextPage PageKey
-					Key:     domain.GeneratePageKey(),
-					Content: mock.GenerateRandomString(3),
-				},
-			}
-		})
-		When("Call SetPage for every page", func() {
-			var (
-				gotPages []domain.Page
-				gotPage  domain.Page
-				gotHead  domain.PageKey
-				err      error
-			)
-			BeforeEach(func() {
-				// set pages to list
-				for _, p := range pages {
-					Expect(repo.SetPage(context.Background(), userID, listKey, p)).ShouldNot(HaveOccurred())
-				}
-
-				// gotHead, err = repo.GetHead(context.Background(), userID, listKey)
-				// Expect(err).ShouldNot(HaveOccurred())
-
-				// curPageKey := gotHead
-				// for i := 0; i < len(pages); i++ {
-				// 	gotPage, err = repo.GetPage(context.Background(), curPageKey)
-				// 	Expect(err).ShouldNot(HaveOccurred())
-				// 	gotPages = append(gotPages, gotPage)
-				// }
-			})
-			BeforeEach(func() {
-				gotHead, err = repo.GetHead(context.Background(), userID, listKey)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				curPageKey := gotHead
-				for i := 0; i < len(pages); i++ {
-					gotPage, err = repo.GetPage(context.Background(), curPageKey)
-					Expect(err).ShouldNot(HaveOccurred())
-					gotPages = append(gotPages, gotPage)
-				}
-			})
-			It("every page should be set in FIFO order", func() {
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(gotPage).To(Equal(pages))
+					Expect(nextCandidate).NotTo(Equal(""))
+				})
 			})
 		})
 	})

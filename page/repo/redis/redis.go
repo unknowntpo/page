@@ -126,7 +126,7 @@ func (r *pageRepoImpl) SetPage(
 	userID int64,
 	listKey domain.ListKey,
 	p domain.Page,
-) error {
+) (domain.PageKey, error) {
 	return r.setPage(ctx, userID, listKey, p)
 }
 
@@ -135,7 +135,7 @@ func (r *pageRepoImpl) setPage(
 	userID int64,
 	listKey domain.ListKey,
 	p domain.Page,
-) error {
+) (domain.PageKey, error) {
 	// implementation
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
 	headIfHashMapNotExist := domain.GeneratePageKey()
@@ -144,7 +144,7 @@ func (r *pageRepoImpl) setPage(
 
 	b, err := json.Marshal(p)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	keys := []string{string(pageMetaKey), string(listKeyByUser)}
@@ -182,21 +182,20 @@ func (r *pageRepoImpl) setPage(
 
 		redis.log(redis.LOG_NOTICE, "doneWithValue", ARGV[1])
 
-		return {ok = "status"}	
+		return pageKey
 	`)
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), "ResourceNotFound"):
-			return errors.Wrap(errors.ResourceNotFound, fmt.Sprintf("pageList %s for userID [%d] not found, call NewList first", listKey, userID), err)
+			return "", errors.Wrap(errors.ResourceNotFound, fmt.Sprintf("pageList %s for userID [%d] not found, call NewList first", listKey, userID), err)
 		default:
-			return errors.Wrap(errors.Internal, " failed on script.Run", err)
+			return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
 		}
 	}
 
-	// Print the result
-	fmt.Printf("Result: %v", result)
+	pageKey := domain.PageKey(result.(string))
 
-	return nil
+	return pageKey, nil
 }
