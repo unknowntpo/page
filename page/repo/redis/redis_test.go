@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/unknowntpo/page/domain"
 	mock "github.com/unknowntpo/page/domain/mock"
+	"github.com/unknowntpo/page/pkg/errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -63,6 +64,62 @@ var _ = Describe("PageRepo", func() {
 				Expect(nextCandidate).To(Equal(""))
 			}
 			assertFn()
+		})
+	})
+
+	Context("SetPage is called", func() {
+		Context("NewList hasn't been called", func() {
+			var (
+				listKey domain.ListKey
+				p       domain.Page
+			)
+			const (
+				userID int64 = 33
+			)
+			BeforeEach(func() {
+				listKey = domain.ListKey("testList")
+				// Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
+			})
+			It("should return ResourceNotFound error", func() {
+				err := repo.SetPage(context.Background(), userID, listKey, p)
+				Expect(errors.KindIs(err, errors.ResourceNotFound)).To(BeTrue())
+			})
+		})
+		PContext("NewList has been called before", func() {
+			var (
+				listKey domain.ListKey
+			)
+			const (
+				userID int64 = 33
+			)
+			BeforeEach(func() {
+				listKey = domain.ListKey("testList")
+				Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
+			})
+			It("should initialize data structures for list", func() {
+				assertFn := func() {
+					// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
+					res, err := client.HGetAll(
+						context.Background(),
+						string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
+					).Result()
+					Expect(err).ShouldNot(HaveOccurred())
+					fmt.Println("got res", res)
+
+					head, ok := res["head"]
+					Expect(ok).To(BeTrue())
+					Expect(head).To(Equal(""))
+
+					tail, ok := res["tail"]
+					Expect(ok).To(BeTrue())
+					Expect(tail).To(Equal(""))
+
+					nextCandidate, ok := res["nextCandidate"]
+					Expect(ok).To(BeTrue())
+					Expect(nextCandidate).To(Equal(""))
+				}
+				assertFn()
+			})
 		})
 	})
 

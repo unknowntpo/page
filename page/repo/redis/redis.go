@@ -47,7 +47,7 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 	_, err := script.Run(context.Background(), r.client, keys).Result()
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), "list has already exist"):
+		case strings.Contains(err.Error(), "ResourceAlreadyExist"):
 			return errors.Wrap(errors.ResourceAlreadyExist, fmt.Sprintf("pageList %s for userID [%d] has already exist", listKey, userID), err)
 		default:
 			return errors.Wrap(errors.Internal, " failed on script.Run", err)
@@ -62,7 +62,7 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 	if err != nil {
 		switch err {
 		case redis.Nil:
-			return domain.Page{}, errors.Wrap(errors.NotFound, "", err)
+			return domain.Page{}, errors.Wrap(errors.ResourceNotFound, "", err)
 		default:
 			return domain.Page{}, errors.Wrap(errors.Internal, "failed on r.client.Get", err)
 		}
@@ -142,6 +142,20 @@ func (r *pageRepoImpl) setPage(
 	nextCandidate := domain.GeneratePageKey()
 	pageMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
 
+	b, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+
+	keys := []string{string(pageMetaKey), string(listKeyByUser)}
+	args := []any{
+		string(b),
+		// score will be expire time of pageKey
+		time.Now().Add(24 * time.Hour).Unix(),
+		string(nextCandidate),
+		string(headIfHashMapNotExist),
+	}
+
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(`
 		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1], KEYS[2])
@@ -150,11 +164,8 @@ func (r *pageRepoImpl) setPage(
 		-- Add pageMeta.nextCandidate to sorted set pageList with score: ARGV[2]
 		local pageKey
 		if redis.call("EXISTS", KEYS[1]) == 0 then
-			-- HashMap doesn't exist, create new one 
-			redis.call("HSET", KEYS[1], "head", ARGV[4])
-			redis.call("HSET", KEYS[1], "tail", ARGV[4])
-			redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
-			pageKey = ARGV[3]
+			-- HashMap doesn't exist, return error
+			return {err = "ResourceNotFound"}
 		else
 			pageKey = redis.call("HGET", KEYS[1], "nextCandidate")
 			redis.log(redis.LOG_NOTICE, "got pageKey and score", pageKey, ARGV[2])
@@ -174,23 +185,14 @@ func (r *pageRepoImpl) setPage(
 		return {ok = "status"}	
 	`)
 
-	b, err := json.Marshal(p)
-	if err != nil {
-		return err
-	}
-
-	keys := []string{string(pageMetaKey), string(listKeyByUser)}
-	args := []any{
-		string(b),
-		// score will be expire time of pageKey
-		time.Now().Add(24 * time.Hour).Unix(),
-		string(nextCandidate),
-		string(headIfHashMapNotExist),
-	}
-
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
-		return err
+		switch {
+		case strings.Contains(err.Error(), "ResourceNotFound"):
+			return errors.Wrap(errors.ResourceNotFound, fmt.Sprintf("pageList %s for userID [%d] not found, call NewList first", listKey, userID), err)
+		default:
+			return errors.Wrap(errors.Internal, " failed on script.Run", err)
+		}
 	}
 
 	// Print the result

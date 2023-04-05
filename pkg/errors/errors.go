@@ -13,9 +13,9 @@ type myError struct {
 type Kind string
 
 const (
-	NotFound             Kind = "builtin.NotFound"
 	BadRequest           Kind = "builtin.BadRequest"
 	Internal             Kind = "builtin.Internal"
+	ResourceNotFound     Kind = "builtin.ResourceNotFound"
 	ResourceAlreadyExist Kind = "builtin.ResourceAlreadyExist"
 )
 

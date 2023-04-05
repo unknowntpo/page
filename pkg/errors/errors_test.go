@@ -15,28 +15,28 @@ func TestErrors(t *testing.T) {
 	}{
 		{
 			name:        "basic error",
-			err:         New(NotFound, "key not found"),
+			err:         New(ResourceNotFound, "key not found"),
 			expected:    "key not found",
 			expectedErr: true,
-			kind:        NotFound,
+			kind:        ResourceNotFound,
 		},
 		{
 			name:        "error concatenation",
-			err:         Wrap(NotFound, "key not found", errors.New("database error")),
+			err:         Wrap(ResourceNotFound, "key not found", errors.New("database error")),
 			expected:    "key not found: database error",
 			expectedErr: true,
-			kind:        NotFound,
+			kind:        ResourceNotFound,
 		},
 		{
 			name:        "error concatenation with nil previous error",
-			err:         Wrap(NotFound, "key not found", nil),
+			err:         Wrap(ResourceNotFound, "key not found", nil),
 			expected:    "key not found",
 			expectedErr: true,
-			kind:        NotFound,
+			kind:        ResourceNotFound,
 		},
 		{
 			name:        "IsKind with custom error",
-			err:         New(NotFound, "key not found"),
+			err:         New(ResourceNotFound, "key not found"),
 			expected:    "",
 			expectedErr: false,
 			kind:        BadRequest,
@@ -53,7 +53,7 @@ func TestErrors(t *testing.T) {
 			err:         nil,
 			expected:    "",
 			expectedErr: false,
-			kind:        NotFound,
+			kind:        ResourceNotFound,
 		},
 		{
 			name:        "Wrap custom error",
@@ -64,10 +64,10 @@ func TestErrors(t *testing.T) {
 		},
 		{
 			name:        "Wrap standard error",
-			err:         Wrap(NotFound, "key not found", errors.New("not found")),
+			err:         Wrap(ResourceNotFound, "key not found", errors.New("not found")),
 			expected:    "key not found: not found",
 			expectedErr: true,
-			kind:        NotFound,
+			kind:        ResourceNotFound,
 		},
 		{
 			name:        "Wrap nil error",
