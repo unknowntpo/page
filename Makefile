@@ -34,3 +34,7 @@ test:
 	go test $(if $(VERBOSE),-v) -p 1 \
 	 -count 1 $(TESTPKG) \
 	 $(if $(FOCUS), -ginkgo.focus '$(FOCUS)')
+
+## build: build the binary
+build:
+	go build -o bin/server ./cmd/server
