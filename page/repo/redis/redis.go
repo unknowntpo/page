@@ -77,6 +77,11 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
 	listMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
 
+	keys := []string{string(listMetaKey), string(listKeyByUser)}
+	args := []any{
+		time.Now().Add(-1 * domain.DefaultPageTTL).Unix(),
+	}
+
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(`
 		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1], KEYS[2])
@@ -99,17 +104,15 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 			headPageKey = redis.call("ZRANGE", KEYS[2], 0, "+inf", "BYSCORE", "LIMIT", 0, 1)
 			redis.log(redis.LOG_NOTICE, "got headPageKey", headPageKey)
 			redis.call("HSET", KEYS[1], "head", headPageKey)
+
+			-- return the new one
+			return headPageKey
 		end
 
 		redis.log(redis.LOG_NOTICE, "after check, got headPageKey", headPageKey)
 
 		return headPageKey
 	`)
-
-	keys := []string{string(listMetaKey), string(listKeyByUser)}
-	args := []any{
-		time.Now().Unix(),
-	}
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {

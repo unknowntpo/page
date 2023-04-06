@@ -168,6 +168,25 @@ var _ = Describe("PageRepo", func() {
 					assertListMeta()
 					assertPageList()
 				})
+
+				When("GetPage is called", func() {
+					var (
+						gotPages []domain.Page
+					)
+					BeforeEach(func() {
+						head, err := repo.GetHead(context.Background(), userID, listKey)
+						Expect(err).ShouldNot(HaveOccurred())
+						cur := head
+						for i := 0; i < len(pages); i++ {
+							gotPage, err := repo.GetPage(context.Background(), cur)
+							Expect(err).ShouldNot(HaveOccurred())
+							gotPages = append(gotPages, gotPage)
+						}
+					})
+					It("should return pages we inserted", func() {
+						Expect(gotPages).To(Equal(pages))
+					})
+				})
 			})
 		})
 	})
