@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -28,6 +29,14 @@ type Page struct {
 	Key      PageKey
 	Content  string
 	NextPage PageKey
+}
+
+func (p *Page) String() string {
+	b, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
 }
 
 func (p *Page) SetContent(c string) {

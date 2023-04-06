@@ -33,4 +33,4 @@ TESTPKG ?= ./...
 test:
 	go test $(if $(VERBOSE),-v) -p 1 \
 	 -count 1 $(TESTPKG) \
-	 $(if $(FOCUS), -ginkgo.focus $(FOCUS))
+	 $(if $(FOCUS), -ginkgo.focus '$(FOCUS)')

@@ -7,7 +7,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/unknowntpo/page/domain"
-	mock "github.com/unknowntpo/page/domain/mock"
 	"github.com/unknowntpo/page/pkg/debug"
 	"github.com/unknowntpo/page/pkg/errors"
 
@@ -31,7 +30,7 @@ var _ = Describe("PageRepo", func() {
 		repo = NewPageRepo(client)
 	})
 
-	Context("NewList is called", func() {
+	When("NewList is called", func() {
 		var (
 			listKey domain.ListKey
 		)
@@ -104,13 +103,13 @@ var _ = Describe("PageRepo", func() {
 				BeforeEach(func() {
 					pages = []domain.Page{
 						{
-							Content: mock.GenerateRandomString(3),
+							Content: "page 1",
 						},
 						{
-							Content: mock.GenerateRandomString(3),
+							Content: "page 2",
 						},
 						{
-							Content: mock.GenerateRandomString(3),
+							Content: "page 3",
 						},
 					}
 					for i := range pages {
@@ -165,8 +164,30 @@ var _ = Describe("PageRepo", func() {
 							Expect(res[i]).To(Equal(string(pages[i].Key)))
 						}
 					}
+
+					assertActualPageData := func() {
+						// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
+						rangeOpts := &redis.ZRangeBy{
+							Min: "0",
+							Max: "+inf",
+						}
+						res, err := client.ZRangeByScore(
+							context.Background(),
+							string(domain.GenerateListKeyByUserID(listKey, userID)),
+							rangeOpts,
+						).Result()
+						Expect(err).ShouldNot(HaveOccurred())
+
+						fmt.Println("want pageList: ", debug.Debug(pages))
+
+						fmt.Println("pageList: ", debug.Debug(res))
+						for i := 0; i < len(pages); i++ {
+							Expect(res[i]).To(Equal(string(pages[i].Key)))
+						}
+					}
 					assertListMeta()
 					assertPageList()
+					assertActualPageData()
 				})
 
 				When("GetPage is called", func() {
@@ -181,9 +202,15 @@ var _ = Describe("PageRepo", func() {
 							gotPage, err := repo.GetPage(context.Background(), cur)
 							Expect(err).ShouldNot(HaveOccurred())
 							gotPages = append(gotPages, gotPage)
+							cur = gotPage.NextPage
 						}
 					})
 					It("should return pages we inserted", func() {
+						// clear NextPage field in element of pages and gotPages because pages has no aware of that
+						for i := 0; i < len(pages); i++ {
+							pages[i].NextPage = ""
+							gotPages[i].NextPage = ""
+						}
 						Expect(gotPages).To(Equal(pages))
 					})
 				})

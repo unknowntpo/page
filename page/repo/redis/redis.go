@@ -70,6 +70,8 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 	if err := json.Unmarshal([]byte(pageStr), &p); err != nil {
 		return domain.Page{}, errors.Wrap(errors.Internal, "failed on json.Unmarshal", err)
 	}
+	// We need to set back pageKey because it doesn't exist in p yet
+	p.Key = pageKey
 	return p, nil
 }
 
@@ -140,26 +142,25 @@ func (r *pageRepoImpl) setPage(
 ) (domain.PageKey, error) {
 	// implementation
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
-	headIfHashMapNotExist := domain.GeneratePageKey()
 	nextCandidate := domain.GeneratePageKey()
+	p.NextPage = nextCandidate
 	pageMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
-
-	b, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
 
 	keys := []string{string(pageMetaKey), string(listKeyByUser)}
 	args := []any{
-		string(b),
-		// score will be expire time of pageKey
-		time.Now().Add(24 * time.Hour).Unix(),
+		// actual page data
+		p.String(),
+		// score of the page we wanna add (will be expire time of pageKey)
+		time.Now().Add(domain.DefaultPageTTL).Unix(),
+		// we also need to set nextCandidate to head field of listMeta
 		string(nextCandidate),
-		string(headIfHashMapNotExist),
 	}
 
-	// Create a Lua script to get the max score and add a new value
-	script := redis.NewScript(`
+	ttl := int(domain.DefaultPageTTL.Seconds())
+
+	// If listMeta doesn't exist, return error
+	// If there's no element in list
+	script := redis.NewScript(fmt.Sprintf(`
 		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1], KEYS[2])
 		redis.log(redis.LOG_NOTICE, "got ARGV", ARGV[1], ARGV[2], ARGV[3])
 
@@ -175,7 +176,7 @@ func (r *pageRepoImpl) setPage(
 		local res = redis.call("ZADD", KEYS[2], ARGV[2], pageKey)
 
 		-- set key: KEYS[1] to ARGV[1] with 1 day TTL
-		redis.call("SET", ARGV[4], ARGV[1], "EX", "86400")
+		redis.call("SET", pageKey, ARGV[1], "EX", %d)
 
 		-- Set pageMeta.head = pageKey if there's no element in list (head == "")
 		if redis.call("HGET", KEYS[1], "head") == "" then
@@ -190,7 +191,7 @@ func (r *pageRepoImpl) setPage(
 		redis.log(redis.LOG_NOTICE, "doneWithValue", ARGV[1])
 
 		return pageKey
-	`)
+	`, ttl))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
