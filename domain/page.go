@@ -3,9 +3,10 @@ package domain
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 type PageUsecase interface {
@@ -42,7 +43,13 @@ type Article struct {
 }
 
 func GeneratePageKey() PageKey {
-	return PageKey("page:" + uuid.NewString())
+	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ms := ulid.Timestamp(time.Now())
+	ulid, err := ulid.New(ms, entropy)
+	if err != nil {
+		panic(err)
+	}
+	return PageKey("page:" + ulid.String())
 }
 
 func BuildRedisPageKeyStr(pageKey PageKey) string {

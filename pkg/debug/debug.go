@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func Debug(i any) {
+func Debug(i any) string {
 	b, err := json.MarshalIndent(i, "", "\t")
 	if err != nil {
 		panic(err)
@@ -13,5 +13,5 @@ func Debug(i any) {
 	fmt.Println()
 	green := "\033[32m"
 	reset := "\033[0m"
-	fmt.Println(green + string(b) + reset)
+	return fmt.Sprint(green + string(b) + reset)
 }

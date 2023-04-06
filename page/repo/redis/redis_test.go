@@ -122,28 +122,51 @@ var _ = Describe("PageRepo", func() {
 				})
 
 				It("related data structures should be set", func() {
-					// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
-					res, err := client.HGetAll(
-						context.Background(),
-						string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
-					).Result()
-					Expect(err).ShouldNot(HaveOccurred())
+					assertListMeta := func() {
+						// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
+						res, err := client.HGetAll(
+							context.Background(),
+							string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
+						).Result()
+						Expect(err).ShouldNot(HaveOccurred())
 
-					debug.Debug(pages)
+						// head should be set to first element of pages
+						head, ok := res["head"]
+						Expect(ok).To(BeTrue())
+						Expect(head).To(Equal(string(pages[0].Key)))
 
-					// head should be set to first element of pages
-					head, ok := res["head"]
-					Expect(ok).To(BeTrue())
-					Expect(head).To(Equal(string(pages[0].Key)))
+						// tail should be set to last element of pages
+						tail, ok := res["tail"]
+						Expect(ok).To(BeTrue())
+						Expect(tail).To(Equal(string(pages[len(pages)-1].Key)))
 
-					// tail should be set to last element of pages
-					tail, ok := res["tail"]
-					Expect(ok).To(BeTrue())
-					Expect(tail).To(Equal(string(pages[len(pages)-1].Key)))
+						nextCandidate, ok := res["nextCandidate"]
+						Expect(ok).To(BeTrue())
+						Expect(nextCandidate).NotTo(Equal(""))
+					}
 
-					nextCandidate, ok := res["nextCandidate"]
-					Expect(ok).To(BeTrue())
-					Expect(nextCandidate).NotTo(Equal(""))
+					assertPageList := func() {
+						// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
+						rangeOpts := &redis.ZRangeBy{
+							Min: "0",
+							Max: "+inf",
+						}
+						res, err := client.ZRangeByScore(
+							context.Background(),
+							string(domain.GenerateListKeyByUserID(listKey, userID)),
+							rangeOpts,
+						).Result()
+						Expect(err).ShouldNot(HaveOccurred())
+
+						fmt.Println("want pageList: ", debug.Debug(pages))
+
+						fmt.Println("pageList: ", debug.Debug(res))
+						for i := 0; i < len(pages); i++ {
+							Expect(res[i]).To(Equal(string(pages[i].Key)))
+						}
+					}
+					assertListMeta()
+					assertPageList()
 				})
 			})
 		})
