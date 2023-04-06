@@ -3,8 +3,9 @@ package domain
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
+
+	"golang.org/x/exp/rand"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -43,7 +44,7 @@ type Article struct {
 }
 
 func GeneratePageKey() PageKey {
-	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+	entropy := rand.New(rand.NewSource(uint64(time.Now().UnixNano())))
 	ms := ulid.Timestamp(time.Now())
 	ulid, err := ulid.New(ms, entropy)
 	if err != nil {
