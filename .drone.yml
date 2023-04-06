@@ -4,8 +4,6 @@ name: default
 platform:
   os: linux
   arch: amd64
-node:
-  machine: digitalocean
 workspace:
   base: /go
   path: src/github.com/unknowntpo/page
