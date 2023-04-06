@@ -36,18 +36,18 @@ func (m *MockPageUsecase) EXPECT() *MockPageUsecaseMockRecorder {
 }
 
 // GetHead mocks base method.
-func (m *MockPageUsecase) GetHead(ctx context.Context, listKey domain.ListKey) (domain.PageKey, error) {
+func (m *MockPageUsecase) GetHead(ctx context.Context, userID int64, listKey domain.ListKey) (domain.PageKey, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHead", ctx, listKey)
+	ret := m.ctrl.Call(m, "GetHead", ctx, userID, listKey)
 	ret0, _ := ret[0].(domain.PageKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetHead indicates an expected call of GetHead.
-func (mr *MockPageUsecaseMockRecorder) GetHead(ctx, listKey interface{}) *gomock.Call {
+func (mr *MockPageUsecaseMockRecorder) GetHead(ctx, userID, listKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHead", reflect.TypeOf((*MockPageUsecase)(nil).GetHead), ctx, listKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHead", reflect.TypeOf((*MockPageUsecase)(nil).GetHead), ctx, userID, listKey)
 }
 
 // GetPage mocks base method.
@@ -162,11 +162,12 @@ func (mr *MockPageRepoMockRecorder) NewList(ctx, userID, listKey interface{}) *g
 }
 
 // SetPage mocks base method.
-func (m *MockPageRepo) SetPage(ctx context.Context, userID int64, listkey domain.ListKey, page domain.Page) error {
+func (m *MockPageRepo) SetPage(ctx context.Context, userID int64, listkey domain.ListKey, page domain.Page) (domain.PageKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPage", ctx, userID, listkey, page)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(domain.PageKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SetPage indicates an expected call of SetPage.

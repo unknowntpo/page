@@ -99,13 +99,13 @@ var _ = Describe("PageAPI", Ordered, func() {
 		BeforeEach(func() {
 			mockPageUsecase.
 				EXPECT().
-				GetHead(gomock.Any(), testListKey).
+				GetHead(gomock.Any(), userID, testListKey).
 				Return(dummyHeadPageKey, nil).Times(1)
 		})
 		BeforeEach(func() {
 			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
 				ListKey: string(testListKey),
-				UserID:  33,
+				UserID:  userID,
 			}))
 			Expect(err).ShouldNot(HaveOccurred())
 		})
