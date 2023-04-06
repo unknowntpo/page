@@ -31,4 +31,6 @@ TESTPKG ?= ./...
 
 ## test: run unit tests
 test:
-	go test $(if $(VERBOSE),-v) $(TESTPKG) $(if $(FOCUS), -ginkgo.focus $(FOCUS))
+	go test $(if $(VERBOSE),-v) -p 1 \
+	 -count 1 $(TESTPKG) \
+	 $(if $(FOCUS), -ginkgo.focus $(FOCUS))
