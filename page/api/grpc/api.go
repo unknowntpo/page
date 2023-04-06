@@ -63,11 +63,17 @@ func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		if errors.Is(err, io.EOF) {
 			break
 		}
+		if err != nil {
+			// TODO: Which error should we handle ?
+			log.Println("failed on s.useCase.SetPage", err)
+			return connect.NewError(connect.CodeAborted, nil)
+		}
 		p := domain.Page{}
 		p.SetContent(req.PageContent)
 		pageKey, err := s.useCase.SetPage(ctx, req.UserID, domain.ListKey(req.ListKey), p)
 		if err != nil {
 			// TODO: Which error should we handle ?
+			log.Println("failed on s.useCase.SetPage", err)
 			return connect.NewError(connect.CodeAborted, nil)
 		}
 		res := connect.NewResponse(&pb.SetPageResponse{

@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,8 +24,9 @@ func TestPageAPI(t *testing.T) {
 }
 
 // Ref: https://github.com/bufbuild/connect-demo/blob/main/main_test.go
-var _ = Describe("PageAPI", func() {
+var _ = Describe("PageAPI", Ordered, func() {
 	var (
+		ctrl            *gomock.Controller
 		mux             *http.ServeMux
 		server          *httptest.Server
 		client          pageconnect.PageServiceClient
@@ -36,9 +38,10 @@ var _ = Describe("PageAPI", func() {
 		dummyHeadPageKey domain.PageKey = "dummy"
 		userID           int64          = 33
 	)
+
 	BeforeEach(func() {
 		// Set up mock usecase
-		ctrl := gomock.NewController(GinkgoT())
+		ctrl = gomock.NewController(GinkgoT())
 		mockPageUsecase = mock.NewMockPageUsecase(ctrl)
 
 		// Start mux
@@ -62,6 +65,7 @@ var _ = Describe("PageAPI", func() {
 
 	AfterEach(func() {
 		server.Close()
+		ctrl.Finish()
 	})
 
 	When("NewList is called", func() {
@@ -107,6 +111,60 @@ var _ = Describe("PageAPI", func() {
 		})
 		It("should return expected PageKey", func() {
 			Expect(res.Msg.PageKey).To(Equal(string(dummyHeadPageKey)))
+		})
+	})
+	When("SetPage is called", func() {
+		var (
+			err    error
+			stream *connect.BidiStreamForClient[pb.SetPageRequest, pb.SetPageResponse]
+			pages  = []domain.Page{
+				{
+					Content: mock.GenerateRandomString(3),
+				},
+				{
+					Content: mock.GenerateRandomString(3),
+				},
+				{
+					Content: mock.GenerateRandomString(3),
+				},
+			}
+			gotPages []domain.Page
+		)
+		const round = 3
+
+		BeforeEach(func() {
+			mockPageUsecase.
+				EXPECT().
+				SetPage(gomock.Any(), userID, testListKey, gomock.Any()).
+				DoAndReturn(func(ctx context.Context, userID int64, listKey domain.ListKey, page domain.Page) (domain.PageKey, error) {
+					gotPages = append(gotPages, page)
+					return dummyHeadPageKey, nil
+				}).Times(round)
+		})
+		BeforeEach(func() {
+			stream = client.SetPage(context.Background())
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+		Context("call stream.Send for three times", func() {
+			BeforeEach(func() {
+				for i := 0; i < round; i++ {
+					err := stream.Send(&pb.SetPageRequest{UserID: userID, ListKey: string(testListKey), PageContent: pages[i].Content})
+					if err == io.EOF {
+						break
+					}
+					Expect(err).ShouldNot(HaveOccurred())
+					// Wait until we got response
+					_, err = stream.Receive()
+					if err == io.EOF {
+						break
+					}
+				}
+				Expect(stream.CloseRequest()).ShouldNot(HaveOccurred())
+			})
+			It("gotPages should be equal to pages", func() {
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(gotPages).To(Equal(pages))
+			})
 		})
 	})
 })
