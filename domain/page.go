@@ -44,8 +44,9 @@ type Article struct {
 }
 
 func GeneratePageKey() PageKey {
-	entropy := rand.New(rand.NewSource(uint64(time.Now().UnixNano())))
-	ms := ulid.Timestamp(time.Now())
+	now := time.Now()
+	entropy := rand.New(rand.NewSource(uint64(now.UnixNano())))
+	ms := ulid.Timestamp(now)
 	ulid, err := ulid.New(ms, entropy)
 	if err != nil {
 		panic(err)
