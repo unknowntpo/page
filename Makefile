@@ -26,3 +26,9 @@ proto/gen:
 	# protoc --go_out=. --go_opt=paths=source_relative \
     # --go-grpc_out=. --go-grpc_opt=paths=source_relative \
 	# ./internal/api/page/grpc/page/page.proto
+
+TESTPKG ?= ./...
+
+## test: run unit tests
+test:
+	go test $(if $(VERBOSE),-v) $(TESTPKG) $(if $(FOCUS), -ginkgo.focus $(FOCUS))
