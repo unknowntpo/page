@@ -3,6 +3,9 @@ Dcard Interview Repo
 
 ## Redis Storage Design
 
+Key: ULID:
+Why Use ULID ? 
+
 We have three redis data structure to store the list data:
 
 - listMeta `listMeta:<listKey>:<userID>` to store the metadata of a list, like `head`, `tail`, `nextCandidate`   
