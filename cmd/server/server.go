@@ -10,6 +10,8 @@ import (
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	pageAPI "github.com/unknowntpo/page/page/api/grpc"
 	pageUcase "github.com/unknowntpo/page/page/usecase"
+	pageRepo "github.com/unknowntpo/page/page/repo/redis"
+	"github.com/unknowntpo/page/infra"
 
 	"github.com/unknowntpo/page/gen/proto/page/pageconnect"
 )
@@ -20,14 +22,14 @@ func main() {
 	mux := http.NewServeMux()
 	reflector := grpcreflect.NewStaticReflector(
 		"page.PageService",
-		// protoc-gen-connect-go generates package-level constants
-		// for these fully-qualified protobuf service names, so you'd more likely
-		// reference userv1.UserServiceName and groupv1.GroupServiceName.
 	)
+
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 
-	pageUsecase := pageUcase.NewPageUsecase()
+  client := infra.NewRedisClient()
+  repo := pageRepo.NewPageRepo(client)
+	pageUsecase := pageUcase.NewPageUsecase(repo)
 	pageServer := pageAPI.NewPageServer(pageUsecase)
 
 	path, handler := pageconnect.NewPageServiceHandler(pageServer)

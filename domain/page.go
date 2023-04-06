@@ -13,7 +13,7 @@ import (
 
 type PageUsecase interface {
 	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
-	GetHead(ctx context.Context, listKey ListKey) (PageKey, error)
+	GetHead(ctx context.Context, userID int64, listKey ListKey) (PageKey, error)
 	SetPage(ctx context.Context, userID int64, listKey ListKey, page Page) (PageKey, error)
 	NewList(ctx context.Context, userID int64, listKey ListKey) error
 }

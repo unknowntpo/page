@@ -39,7 +39,7 @@ func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewLis
 
 func (s *pageServer) GetHead(ctx context.Context, req *connect.Request[pb.GetHeadRequest]) (*connect.Response[pb.GetHeadResponse], error) {
 	log.Println("Request headers: ", req.Header())
-	pageKey, err := s.useCase.GetHead(ctx, domain.ListKey(req.Msg.ListKey))
+	pageKey, err := s.useCase.GetHead(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey))
 	if err != nil {
 		log.Println("failed on s.useCase.GetHead", err)
 		return nil, connect.NewError(connect.CodeInternal, pkgerrors.New(pkgerrors.Internal, "something goes wrong"))
