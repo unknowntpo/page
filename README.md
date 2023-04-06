@@ -1,6 +1,8 @@
 # page
 Dcard Interview Repo
 
+[![Test](https://github.com/unknowntpo/page/actions/workflows/main.yml/badge.svg?event=push)](https://github.com/unknowntpo/page/actions/workflows/main.yml)
+
 ## Redis Storage Design
 
 ### pageKey: UUID v.s. ULID
