@@ -7,6 +7,14 @@ platform:
 workspace:
   base: /go
   path: src/github.com/unknowntpo/page
+
+clone:
+  git:
+    image: plugins/git
+    depth: 1
+    repo: github.com/unknowntpo/page
+    branch: master
+
 steps:
   - name: test
     image: golang:1.20.3
