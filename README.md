@@ -3,6 +3,8 @@ Dcard Interview Repo
 
 ## Redis Storage Design
 
+### pageKey: UUID v.s. ULID
+
 Key: ULID:
 Why Use ULID ? 
 
