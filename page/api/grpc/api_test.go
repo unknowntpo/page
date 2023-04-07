@@ -133,13 +133,13 @@ var _ = Describe("PageAPI", Ordered, func() {
 			stream *connect.BidiStreamForClient[pb.SetPageRequest, pb.SetPageResponse]
 			pages  = []domain.Page{
 				{
-					Next: domain.PageKey(mock.GenerateRandomString(3)),
+					Content: mock.GenerateRandomString(3),
 				},
 				{
-					Next: domain.PageKey(mock.GenerateRandomString(3)),
+					Content: mock.GenerateRandomString(3),
 				},
 				{
-					Next: domain.PageKey(mock.GenerateRandomString(3)),
+					Content: mock.GenerateRandomString(3),
 				},
 			}
 			gotPages []domain.Page
