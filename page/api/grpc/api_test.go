@@ -160,7 +160,6 @@ var _ = Describe("PageAPI", Ordered, func() {
 				}).Times(round)
 
 			stream = client.SetPage(context.Background())
-			Expect(err).ShouldNot(HaveOccurred())
 		})
 		Context("call stream.Send for three times", func() {
 			BeforeEach(func() {

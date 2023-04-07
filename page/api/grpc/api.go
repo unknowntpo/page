@@ -78,7 +78,7 @@ func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		if err != nil {
 			switch {
 			case errors.Is(err, io.EOF):
-				break
+				return nil
 			default:
 				log.Println("failed on s.useCase.GetPage", err)
 				return connect.NewError(connect.CodeAborted, nil)
@@ -114,7 +114,7 @@ func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		if err != nil {
 			switch {
 			case errors.Is(err, io.EOF):
-				break
+				return nil
 			default:
 				// TODO: Which error should we handle ?
 				log.Println("failed on s.useCase.SetPage", err)
