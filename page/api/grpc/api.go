@@ -97,7 +97,7 @@ func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		}
 		res := connect.NewResponse(&pb.GetPageResponse{
 			PageContent: page.Content,
-			Next:        string(page.NextPage),
+			Next:        string(page.Next),
 		})
 		res.Header().Set("Page-Version", "v1")
 		if err := stream.Send(res.Msg); err != nil {

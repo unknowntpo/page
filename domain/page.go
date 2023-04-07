@@ -26,9 +26,25 @@ type PageRepo interface {
 }
 
 type Page struct {
-	Key      PageKey
-	Content  string
-	NextPage PageKey
+	Key     PageKey `json:"key"`
+	Content string  `json:"content"`
+	Next    PageKey `json:"next"`
+}
+
+func (p *Page) GetJSONContent() string {
+	b, err := json.Marshal(p.Content)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
+func (p *Page) Marshal() []byte {
+	b, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func (p *Page) String() string {

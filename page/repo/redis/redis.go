@@ -14,6 +14,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var (
+	ErrListNotExist = errors.New(errors.ResourceNotFound, "ListNotExist")
+
+	ErrPageNotFound = errors.New(errors.ResourceNotFound, "PageNotFound")
+)
+
 type pageRepoImpl struct {
 	// any fields needed for implementation
 	client *redis.Client
@@ -57,21 +63,50 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 
 func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
 	// implementation
-	pageStr, err := r.client.Get(ctx, string(pageKey)).Result()
+	// pageStr, err := r.client.Get(ctx, string(pageKey)).Result()
+	// if err != nil {
+	// 	switch err {
+	// 	case redis.Nil:
+	// 		return domain.Page{}, errors.Wrap(errors.ResourceNotFound, "", err)
+	// 	default:
+	// 		return domain.Page{}, errors.Wrap(errors.Internal, "failed on r.client.Get", err)
+	// 	}
+	// }
+	// p := domain.Page{}
+	// if err := json.Unmarshal([]byte(pageStr), &p); err != nil {
+	// 	return domain.Page{}, errors.Wrap(errors.Internal, "failed on json.Unmarshal", err)
+	// }
+	// // We need to set back pageKey because it doesn't exist in p yet
+	// p.Key = pageKey
+	// return p, nil
+
+	// New implementation: RedisJSON
+	keys := []string{string(pageKey)}
+	args := []any{}
+
+	// Create a Lua script to get the max score and add a new value
+	script := redis.NewScript(fmt.Sprintf(`
+		-- get all content
+		local page = redis.call("JSON.Get", KEYS[1], '.')
+		if not page then
+			return {err = '%s'}
+		end
+		return page
+	`, errors.ResourceNotFound))
+
+	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
-		switch err {
-		case redis.Nil:
-			return domain.Page{}, errors.Wrap(errors.ResourceNotFound, "", err)
-		default:
-			return domain.Page{}, errors.Wrap(errors.Internal, "failed on r.client.Get", err)
+		switch {
+		case errors.Is(err, ErrPageNotFound):
+			return domain.Page{}, ErrPageNotFound
 		}
+		return domain.Page{}, errors.Wrap(errors.Internal, " failed on script.Run", err)
 	}
+
 	p := domain.Page{}
-	if err := json.Unmarshal([]byte(pageStr), &p); err != nil {
+	if err := json.Unmarshal([]byte(result.(string)), &p); err != nil {
 		return domain.Page{}, errors.Wrap(errors.Internal, "failed on json.Unmarshal", err)
 	}
-	// We need to set back pageKey because it doesn't exist in p yet
-	p.Key = pageKey
 	return p, nil
 }
 
@@ -142,18 +177,22 @@ func (r *pageRepoImpl) setPage(
 ) (domain.PageKey, error) {
 	// implementation
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
-	nextCandidate := domain.GeneratePageKey()
-	p.NextPage = nextCandidate
-	pageMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
+	listMetaKeyByUser := domain.GenerateListMetaKeyByUserID(listKey, userID)
+	p.Key = domain.GeneratePageKey()
 
-	keys := []string{string(pageMetaKey), string(listKeyByUser)}
+	// pageContent := p.GetJSONContent()
+	pageContent := p.Marshal()
+
+	keys := []string{
+		string(listMetaKeyByUser),
+		string(listKeyByUser),
+		string(p.Key),
+	}
 	args := []any{
 		// actual page data
-		p.String(),
+		pageContent,
 		// score of the page we wanna add (will be expire time of pageKey)
 		time.Now().Add(domain.DefaultPageTTL).Unix(),
-		// we also need to set nextCandidate to head field of listMeta
-		string(nextCandidate),
 	}
 
 	ttl := int(domain.DefaultPageTTL.Seconds())
@@ -161,34 +200,40 @@ func (r *pageRepoImpl) setPage(
 	// If listMeta doesn't exist, return error
 	// If there's no element in list
 	script := redis.NewScript(fmt.Sprintf(`
-		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1], KEYS[2])
-		redis.log(redis.LOG_NOTICE, "got ARGV", ARGV[1], ARGV[2], ARGV[3])
+		local listMetaKeyByUser = KEYS[1]
+		local listKeyByUser = KEYS[2]
+		local pageKey = KEYS[3]
+		local pageContent = ARGV[1]
+		local dueTime = ARGV[2]
 
-		-- Add pageMeta.nextCandidate to sorted set pageList with score: ARGV[2]
-		local pageKey
-		if redis.call("EXISTS", KEYS[1]) == 0 then
+		if redis.call("EXISTS", listMetaKeyByUser) == 0 then
 			-- HashMap doesn't exist, return error
 			return {err = "ResourceNotFound"}
+		end
+
+		if redis.call("ZADD",listKeyByUser, dueTime, pageKey) ~= 1 then
+			return {err = "failed to add pageKey to sorted set"}
+		end
+
+		-- Set listMeta.head = pageKey if there's no element in list (head == "")
+		if redis.call("HGET", listMetaKeyByUser, "head") == "" then
+			redis.call("HSET", listMetaKeyByUser, "head", pageKey)
 		else
-			pageKey = redis.call("HGET", KEYS[1], "nextCandidate")
-			redis.log(redis.LOG_NOTICE, "got pageKey and score", pageKey, ARGV[2])
-		end
-		local res = redis.call("ZADD", KEYS[2], ARGV[2], pageKey)
-
-		-- set key: KEYS[1] to ARGV[1] with 1 day TTL
-		redis.call("SET", pageKey, ARGV[1], "EX", %d)
-
-		-- Set pageMeta.head = pageKey if there's no element in list (head == "")
-		if redis.call("HGET", KEYS[1], "head") == "" then
-			redis.call("HSET", KEYS[1], "head", pageKey)
+			-- get old listMeta.tail
+			local oldTailPageKey = redis.call("HGET", listMetaKeyByUser, "tail")
+			-- local quotedPageKey = "'" .. pageKey .. "'"
+			local quotedPageKey = [["]] .. pageKey .. [["]]
+			redis.log(redis.LOG_NOTICE, "quotedPageKey", quotedPageKey)
+			redis.log(redis.LOG_NOTICE, "oldTailPageKey", oldTailPageKey)
+			redis.call("JSON.SET", oldTailPageKey, ".next", quotedPageKey)
 		end
 
-		-- Set pageMeta.nextCandidate = ARGV[3] (new candidate)
-		redis.call("HSET", KEYS[1], "nextCandidate", ARGV[3])
 		-- Set pageMeta.tail = pageKey
-		redis.call("HSET", KEYS[1], "tail", pageKey)
+		redis.call("HSET", listMetaKeyByUser, "tail", pageKey)
 
-		redis.log(redis.LOG_NOTICE, "doneWithValue", ARGV[1])
+		-- set key: pageKey to actual data with 1 day TTL
+		redis.call('JSON.SET', pageKey, '.', pageContent)
+		redis.call('EXPIRE', pageKey, %d)
 
 		return pageKey
 	`, ttl))

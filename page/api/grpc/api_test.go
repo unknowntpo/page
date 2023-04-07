@@ -133,13 +133,13 @@ var _ = Describe("PageAPI", Ordered, func() {
 			stream *connect.BidiStreamForClient[pb.SetPageRequest, pb.SetPageResponse]
 			pages  = []domain.Page{
 				{
-					Content: mock.GenerateRandomString(3),
+					Next: domain.PageKey(mock.GenerateRandomString(3)),
 				},
 				{
-					Content: mock.GenerateRandomString(3),
+					Next: domain.PageKey(mock.GenerateRandomString(3)),
 				},
 				{
-					Content: mock.GenerateRandomString(3),
+					Next: domain.PageKey(mock.GenerateRandomString(3)),
 				},
 			}
 			gotPages []domain.Page
@@ -165,7 +165,12 @@ var _ = Describe("PageAPI", Ordered, func() {
 		Context("call stream.Send for three times", func() {
 			BeforeEach(func() {
 				for i := 0; i < round; i++ {
-					err := stream.Send(&pb.SetPageRequest{UserID: userID, ListKey: string(testListKey), PageContent: pages[i].Content})
+					err := stream.Send(
+						&pb.SetPageRequest{
+							UserID:      userID,
+							ListKey:     string(testListKey),
+							PageContent: pages[i].Content,
+						})
 					if err == io.EOF {
 						break
 					}

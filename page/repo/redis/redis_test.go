@@ -49,7 +49,6 @@ var _ = Describe("PageRepo", func() {
 					string(domain.GenerateListMetaKeyByUserID(listKey, userID)),
 				).Result()
 				Expect(err).ShouldNot(HaveOccurred())
-				fmt.Println("got res", res)
 
 				head, ok := res["head"]
 				Expect(ok).To(BeTrue())
@@ -58,10 +57,6 @@ var _ = Describe("PageRepo", func() {
 				tail, ok := res["tail"]
 				Expect(ok).To(BeTrue())
 				Expect(tail).To(Equal(""))
-
-				nextCandidate, ok := res["nextCandidate"]
-				Expect(ok).To(BeTrue())
-				Expect(nextCandidate).NotTo(Equal(""))
 			}
 			assertFn()
 		})
@@ -138,10 +133,6 @@ var _ = Describe("PageRepo", func() {
 						tail, ok := res["tail"]
 						Expect(ok).To(BeTrue())
 						Expect(tail).To(Equal(string(pages[len(pages)-1].Key)))
-
-						nextCandidate, ok := res["nextCandidate"]
-						Expect(ok).To(BeTrue())
-						Expect(nextCandidate).NotTo(Equal(""))
 					}
 
 					assertPageList := func() {
@@ -202,7 +193,7 @@ var _ = Describe("PageRepo", func() {
 							gotPage, err := repo.GetPage(context.Background(), cur)
 							Expect(err).ShouldNot(HaveOccurred())
 							gotPages = append(gotPages, gotPage)
-							cur = gotPage.NextPage
+							cur = gotPage.Next
 						}
 					})
 					It("should return pages we inserted", func() {
@@ -211,8 +202,8 @@ var _ = Describe("PageRepo", func() {
 						fmt.Println("pages", debug.Debug(pages))
 						fmt.Println("gotpages", debug.Debug(gotPages))
 						for i := 0; i < len(pages); i++ {
-							pages[i].NextPage = ""
-							gotPages[i].NextPage = ""
+							pages[i].Next = ""
+							gotPages[i].Next = ""
 						}
 						Expect(gotPages).To(Equal(pages))
 					})
