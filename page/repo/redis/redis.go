@@ -35,7 +35,7 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 
 		-- if listMeta exist, return error
 		if redis.call("EXISTS", KEYS[1]) == 1 then
-			return {err = "list has already exist"}
+			return {err = ResourceAlreadyExist}
 		end
 		-- init listMeta, set head, tail, nextCandidate to ""
 		redis.call("HSET", KEYS[1], "head", "", "tail", "", "nextCandidate", ARGV[1])

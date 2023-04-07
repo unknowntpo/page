@@ -25,8 +25,10 @@ type pageServer struct {
 }
 
 var (
-	ErrInvalidUserID  = errors.New(errors.BadRequest, "userID should be greater than 0")
-	ErrInvalidListKey = errors.New(errors.BadRequest, "listKey can not be empty")
+	ErrInvalidUserID     = errors.New(errors.BadRequest, "userID should be greater than 0")
+	ErrInvalidListKey    = errors.New(errors.BadRequest, "listKey can not be empty")
+	ErrListAlreadyExists = errors.New(errors.ResourceAlreadyExist, "list already exist")
+	ErrInternal          = errors.New(errors.Internal, "Internal Server Error")
 )
 
 func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewListRequest]) (*connect.Response[pb.NewListResponse], error) {
@@ -40,7 +42,13 @@ func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewLis
 	}
 	if err := s.useCase.NewList(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey)); err != nil {
 		log.Println("failed on s.useCase.GetHead", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New(errors.Internal, "something goes wrong"))
+		switch {
+		case errors.KindIs(err, errors.ResourceAlreadyExist):
+			return nil, connect.NewError(connect.CodeAlreadyExists, ErrListAlreadyExists)
+		default:
+			log.Println("failed on s.useCase.NewList", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.New(errors.Internal, "something goes wrong"))
+		}
 	}
 	res := connect.NewResponse(&pb.NewListResponse{
 		Status: "OK",
@@ -69,7 +77,7 @@ func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		req, err := stream.Receive()
 		if err != nil {
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				break
 			default:
 				log.Println("failed on s.useCase.GetPage", err)
@@ -105,12 +113,12 @@ func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		req, err := stream.Receive()
 		if err != nil {
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				break
 			default:
 				// TODO: Which error should we handle ?
 				log.Println("failed on s.useCase.SetPage", err)
-				return connect.NewError(connect.CodeAborted, nil)
+				return connect.NewError(connect.CodeInternal, ErrInternal)
 			}
 		}
 		p := domain.Page{}
@@ -119,7 +127,7 @@ func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		if err != nil {
 			// TODO: Which error should we handle ?
 			log.Println("failed on s.useCase.SetPage", err)
-			return connect.NewError(connect.CodeAborted, nil)
+			return connect.NewError(connect.CodeAborted, ErrInternal)
 		}
 		res := connect.NewResponse(&pb.SetPageResponse{
 			PageKey: string(pageKey),

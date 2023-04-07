@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -48,4 +49,9 @@ func KindIs(err error, kind Kind) bool {
 		return false
 	}
 	return e.Kind() == kind
+}
+
+// Is is a wrapper of errors.Is.
+func Is(err error, target error) bool {
+	return errors.Is(err, target)
 }
