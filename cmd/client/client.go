@@ -45,17 +45,24 @@ func main() {
 	userID := int64(123)
 
 	if err := newList(client, listKey, userID); err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed on newList: %v", err))
 	}
 
 	pages := []string{"page1", "page2", "page3"}
-	setPage(client, listKey, userID, pages)
+	if err := setPage(client, listKey, userID, pages); err != nil {
+		panic(fmt.Errorf("failed on setPage: %v", err))
+	}
 
-	getHead(client, listKey, userID)
-
-	ps, err := getPage(client, listKey, userID)
+	head, err := getHead(client, listKey, userID)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed on getHead: %v", err))
+	}
+
+	fmt.Println("got head", head)
+
+	ps, err := getPage(client, head, userID, len(pages))
+	if err != nil {
+		panic(fmt.Errorf("failed on getPage: %v", err))
 	}
 	fmt.Println(ps)
 }
@@ -88,7 +95,7 @@ func setPage(client pageconnect.PageServiceClient, listKey string, userID int64,
 			if err != nil {
 				switch {
 				case err == io.EOF:
-					return nil
+					goto END
 				default:
 					return err
 				}
@@ -98,13 +105,22 @@ func setPage(client pageconnect.PageServiceClient, listKey string, userID int64,
 		if err != nil {
 			switch {
 			case err == io.EOF:
-				return nil
+				goto END
 			default:
 				return err
 			}
 		}
 		fmt.Printf("Page set with key: %s\n", setPageResp.PageKey)
 	}
+
+END:
+	if err := setPageStream.CloseRequest(); err != nil {
+		return err
+	}
+	if err := setPageStream.CloseResponse(); err != nil {
+		return nil
+	}
+
 	return nil
 }
 
@@ -118,17 +134,18 @@ func getHead(client pageconnect.PageServiceClient, listKey string, userID int64)
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("Head of list is page key: %s\n", getHeadResp.Msg.PageKey)
-	return "", nil
+	head := getHeadResp.Msg.PageKey
+	fmt.Printf("Head of list is page key: %s\n", head)
+	return head, nil
 }
 
-func getPage(client pageconnect.PageServiceClient, headKey string, userID int64) ([]string, error) {
+func getPage(client pageconnect.PageServiceClient, headKey string, userID int64, numOfPage int) ([]string, error) {
 	getPageStream := client.GetPage(context.Background())
 
 	var gotPages []string
 
 	cur := headKey
-	for {
+	for i := 0; i < numOfPage; i++ {
 		req := &pb.GetPageRequest{
 			PageKey: cur,
 		}
@@ -136,7 +153,7 @@ func getPage(client pageconnect.PageServiceClient, headKey string, userID int64)
 		if err != nil {
 			switch {
 			case err == io.EOF:
-				return gotPages, nil
+				goto END
 			default:
 				return nil, err
 			}
@@ -145,13 +162,22 @@ func getPage(client pageconnect.PageServiceClient, headKey string, userID int64)
 		if err != nil {
 			switch {
 			case err == io.EOF:
-				return gotPages, nil
+				goto END
 			default:
 				return nil, err
 			}
 		}
 		gotPages = append(gotPages, res.PageContent)
 		cur = res.Next
-		fmt.Println("gotPages", gotPages)
 	}
+
+END:
+	if err := getPageStream.CloseRequest(); err != nil {
+		return nil, err
+	}
+	if err := getPageStream.CloseResponse(); err != nil {
+		return nil, err
+	}
+
+	return gotPages, nil
 }

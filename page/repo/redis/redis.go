@@ -16,7 +16,6 @@ import (
 
 var (
 	ErrListNotExist = errors.New(errors.ResourceNotFound, "ListNotExist")
-
 	ErrPageNotFound = errors.New(errors.ResourceNotFound, "PageNotFound")
 )
 
