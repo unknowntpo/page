@@ -36,7 +36,6 @@ var _ = Describe("PageAPI", Ordered, func() {
 	const (
 		testListKey      domain.ListKey = "testListKey"
 		dummyHeadPageKey domain.PageKey = "dummy"
-		userID           int64          = 33
 	)
 
 	BeforeEach(func() {
@@ -70,47 +69,62 @@ var _ = Describe("PageAPI", Ordered, func() {
 
 	When("NewList is called", func() {
 		var (
-			err error
-			res *connect.Response[pb.NewListResponse]
+			err    error
+			res    *connect.Response[pb.NewListResponse]
+			userID int64
 		)
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			mockPageUsecase.
 				EXPECT().
 				NewList(gomock.Any(), userID, testListKey).
-				Return(nil).Times(1)
-		})
-		BeforeEach(func() {
+				Return(nil).AnyTimes()
 			res, err = client.NewList(context.Background(), connect.NewRequest(&pb.NewListRequest{
 				ListKey: string(testListKey),
 				UserID:  userID,
 			}))
-			Expect(err).ShouldNot(HaveOccurred())
 		})
-		It("should return OK", func() {
-			Expect(res.Msg.Status).To(Equal("OK"))
+		Context("normal", func() {
+			BeforeEach(func() {
+				userID = 33
+			})
+			It("should return OK", func() {
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(res.Msg.Status).To(Equal("OK"))
+			})
 		})
+		Context("userID not valid", func() {
+			BeforeEach(func() {
+				userID = 0
+			})
+			It("should return invalid argument", func() {
+				Expect(err.Error()).To(ContainSubstring(ErrInvalidUserID.Error()))
+			})
+		})
+
 	})
 
 	When("GetHead is called", func() {
 		var (
-			err error
-			res *connect.Response[pb.GetHeadResponse]
+			err    error
+			res    *connect.Response[pb.GetHeadResponse]
+			userID int64
 		)
 		BeforeEach(func() {
+			userID = 33
 			mockPageUsecase.
 				EXPECT().
 				GetHead(gomock.Any(), userID, testListKey).
 				Return(dummyHeadPageKey, nil).Times(1)
-		})
-		BeforeEach(func() {
 			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
 				ListKey: string(testListKey),
 				UserID:  userID,
 			}))
 			Expect(err).ShouldNot(HaveOccurred())
 		})
-		It("should return expected PageKey", func() {
-			Expect(res.Msg.PageKey).To(Equal(string(dummyHeadPageKey)))
+		Context("normal", func() {
+			It("should return expected PageKey", func() {
+				Expect(res.Msg.PageKey).To(Equal(string(dummyHeadPageKey)))
+			})
 		})
 	})
 	When("SetPage is called", func() {
@@ -130,7 +144,11 @@ var _ = Describe("PageAPI", Ordered, func() {
 			}
 			gotPages []domain.Page
 		)
-		const round = 3
+
+		const (
+			userID int64 = 33
+			round  int   = 3
+		)
 
 		BeforeEach(func() {
 			mockPageUsecase.
@@ -140,8 +158,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 					gotPages = append(gotPages, page)
 					return dummyHeadPageKey, nil
 				}).Times(round)
-		})
-		BeforeEach(func() {
+
 			stream = client.SetPage(context.Background())
 			Expect(err).ShouldNot(HaveOccurred())
 		})

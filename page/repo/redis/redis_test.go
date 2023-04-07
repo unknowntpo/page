@@ -157,8 +157,6 @@ var _ = Describe("PageRepo", func() {
 						).Result()
 						Expect(err).ShouldNot(HaveOccurred())
 
-						fmt.Println("want pageList: ", debug.Debug(pages))
-
 						fmt.Println("pageList: ", debug.Debug(res))
 						for i := 0; i < len(pages); i++ {
 							Expect(res[i]).To(Equal(string(pages[i].Key)))
@@ -193,9 +191,11 @@ var _ = Describe("PageRepo", func() {
 				When("GetPage is called", func() {
 					var (
 						gotPages []domain.Page
+						head     domain.PageKey
+						err      error
 					)
 					BeforeEach(func() {
-						head, err := repo.GetHead(context.Background(), userID, listKey)
+						head, err = repo.GetHead(context.Background(), userID, listKey)
 						Expect(err).ShouldNot(HaveOccurred())
 						cur := head
 						for i := 0; i < len(pages); i++ {
@@ -207,6 +207,9 @@ var _ = Describe("PageRepo", func() {
 					})
 					It("should return pages we inserted", func() {
 						// clear NextPage field in element of pages and gotPages because pages has no aware of that
+						fmt.Println("got head", debug.Debug(head))
+						fmt.Println("pages", debug.Debug(pages))
+						fmt.Println("gotpages", debug.Debug(gotPages))
 						for i := 0; i < len(pages); i++ {
 							pages[i].NextPage = ""
 							gotPages[i].NextPage = ""

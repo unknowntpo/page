@@ -24,7 +24,20 @@ type pageServer struct {
 	useCase domain.PageUsecase
 }
 
+var (
+	ErrInvalidUserID  = errors.New(errors.BadRequest, "userID should be greater than 0")
+	ErrInvalidListKey = errors.New(errors.BadRequest, "listKey can not be empty")
+)
+
 func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewListRequest]) (*connect.Response[pb.NewListResponse], error) {
+	// verify inpput
+	// TODO: Put verification inside domain
+	if req.Msg.ListKey == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, ErrInvalidListKey)
+	}
+	if req.Msg.UserID <= 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, ErrInvalidUserID)
+	}
 	if err := s.useCase.NewList(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey)); err != nil {
 		log.Println("failed on s.useCase.GetHead", err)
 		return nil, connect.NewError(connect.CodeInternal, errors.New(errors.Internal, "something goes wrong"))
