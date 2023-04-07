@@ -5,90 +5,61 @@ Dcard Interview Repo
 
 ## Redis Storage Design
 
-### pageKey: UUID v.s. ULID
+### Goals:
+1. Make sure that every operation is 1 RTT (Round-trip time)
+2. Make sure that related data structure is stored in
 
-Key: ULID:
-Why Use ULID ? 
+First one is achieved by using lua script, it's convenient because every lua script is ensured to be executed atomicly, there's no way to interrupt this, so we don't use something like `MULTI`, `EXEC`, `WATCH`, which is hard to use them within 1 RTT. 
+
+The Second one can be achieved by using Hash Tag 
+see [Redis cluster specification](https://redis.io/docs/reference/cluster-spec/) for more information.
+
+### Implementation Details
+#### Data Structures
 
 We have three redis data structure to store the list data:
 
-- listMeta `listMeta:<listKey>:<userID>` to store the metadata of a list, like `head`, `tail`, `nextCandidate`   
-- pageList `pageList:<listKey>:<userID>` to store the score of `pageKey`, the score will be the expire time of `pageKey`
-- redis String with key = `pageKey`, and value is actual data, the TTL will be set, so we don't need to delete expired data manually. 
+**listMeta**:
+  - Key: `listMeta:<listKey>:<userID>`
+  - Purpose: store the metadata of a list, like `head`, `tail`
 
-### NewList:
-- Initialize `listMeta:<listKey>:<userID>`, with `listMeta:<listKey>:<userID>.head == ""`, `pageMeta.tail == ""`, `nextCandidate = <pageKey>` 
+**pageList**
+  - Key: `pageList:{<listKey>:<userID>}`
+  - Purpose: store the score of `pageKey`, the score will be the expire time of `pageKey`
 
-```
-127.0.0.1:6379> hgetall testList-meta:33
-1) "head"
-2) ""
-3) "tail"
-4) ""
-5) "nextCandidate"
-6) ""
-127.0.0.1:6379>
-```
+**RedisJSON Object**
+  - Key = `page:{<listKey>:<userID>}`
 
-### SetPage:
+It stores the actual data, the TTL will be set to the object, so we don't need to delete expired data manually. 
+The reason I choose RedisJSON because in linked-list, we need to update page.next to new pageKey,
+if I use lua module like [cjson](https://github.com/mpx/lua-cjson), there will be very slow if content in a page is very large.
+The reason is that `cjson` stores data in text format it means that , so if we need to change `.next` pointer frequently, it needs to decode and encode the text, which is costly.
+
+
+
+
+Design:
+- Goals
+- DataStructures
+- Detail
+- - NewList
+- - Setpage
+- - GetHead
+- - GetPage
+
+#### API Design
+
+#### NewList:
+
+Time Complexity: O(1)
+
+NewList initialize the list with `listMeta`, `pageList`
+
+#### SetPage:
+
+Time Complexity: O(1)
 
 SetPage need to do this in a single lua script, and given page should content the `.next` field, which have the pagKey of next candidate page after setting this page.
-
-- Append it the sorted set `pageList:<listKey>:<userID>`
-- Get candidate pageKey from `listMeta:<listKey>:<userID>.nextCandidate`, e.g. `page:43147719-0af6-4701-8c7b-0f63d95677d1`
-- Call `SET <pageKey>` to set data with 1 Day TTL, e.g. `SET page:43147719-0af6-4701-8c7b-0f63d95677d1 <actual-data> EX 86400`
-- Concate the linked-list by modifying `tail`, of `listMeta:<listKey>:<userID>`, and `nextCandidate` field should be set to the one inside given page's next field
-
-
-NOTE: SetPage will also set `listMeta:<listKey>:<userID>.nextCandidate` to next pageKey and the `next` field of current page.
-
-So If I have a page like:
-```
-{
-	"content": [...],
-    "next": "page:64c60df7-45a3-4ad8-9ee5-7a4848ff016e"
-}
-```
-
-listMeta `listMeta:<listKey>:<userID>.nextCandidate` have:
-
-```
-
-```
-
-
-
-
-
-```
-zrange testList:33 0 +inf byscore
-1) "page:43147719-0af6-4701-8c7b-0f63d95677d1"
-```
-
-### GetHead:
-
-We can get head directly from `<listKey>-meta:<userID>`, but head may not exist because of expiration.
-So after obtain the pageKey from `listMeta:<listKey>:<userID>`, we also need to use `EXISTS <head>` to do the re-check,
-if it doesn't exist, then we need to get the oldest pageKey from `pageList:<listKey>:<userID>` by 
-
-```
-ZREMRANGEBYSCORE `pageList:<listKey>:<userID>`, "0", <current_timestamp-TTL>
-```
-
-Then get the real head by calling
-```
-ZRANGE <listKey>-SS:<userID> 0 +inf BYSCORE LIMIT 0 1
-```
-
-finally, set it back to `<listKey>-meta:<userID>.head`, and return the head.
-
-### GetPage:
-Call `GET <pageKey>`, if it doesn't exist, it can have two scenarios
-- Page expired
-- Page doesn't exist
-Since we can't distinguish between these scenarios, so just return `NotFound` error.
-
-Time complexity: `O(1)`
 
 ## TODO: ScyllaDB
 
