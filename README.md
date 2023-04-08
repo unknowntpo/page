@@ -94,6 +94,7 @@ The reason is that `cjson` stores data in text format it means that , so if we n
 
 ### Drawback of this design
 > - TTL can not be adjusted because the linked list will broken.
+> - Redis is in-memory database, and we don't have a way to swap unused object into disk file, this will require lots of Redis node, which will be very expensive
 
 ## TODO: ScyllaDB
 
