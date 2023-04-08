@@ -6,6 +6,12 @@
 
 > TODO
 
+## Choice of Database
+
+:question: Why not PostgreSQL ?
+
+## Choice of GRPC package
+
 ## Redis Storage Design
 
 ### Goals:
