@@ -10,7 +10,15 @@
 
 :question: Why not PostgreSQL ?
 
-## Choice of GRPC package
+PostgreSQL implements MVCC, and for the deleted row, `tx_max` field will be marked, and when it comes to vacuum, this deleted row (dead tuple) will be cleaned. If we delete data frequently, there will be a lot of dead tuples in heap page.
+This will cause `Index Scan` require more disk IO because the actual data is spreaded across multiple pages.
+
+:question: Why I choose Redis ?
+
+- It can delete expired key automatically
+- Insertion is faster than PostgreSQL
+
+## Choice of gRPC package
 
 ## Redis Storage Design
 
