@@ -8,10 +8,10 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
-	pageAPI "github.com/unknowntpo/page/page/api/grpc"
-	pageUcase "github.com/unknowntpo/page/page/usecase"
-	pageRepo "github.com/unknowntpo/page/page/repo/redis"
 	"github.com/unknowntpo/page/infra"
+	pageAPI "github.com/unknowntpo/page/page/api/grpc"
+	pageRepo "github.com/unknowntpo/page/page/repo/redis"
+	pageUcase "github.com/unknowntpo/page/page/usecase"
 
 	"github.com/unknowntpo/page/gen/proto/page/pageconnect"
 )
@@ -27,8 +27,8 @@ func main() {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 
-  client := infra.NewRedisClient()
-  repo := pageRepo.NewPageRepo(client)
+	client := infra.NewRedisClient()
+	repo := pageRepo.NewPageRepo(client)
 	pageUsecase := pageUcase.NewPageUsecase(repo)
 	pageServer := pageAPI.NewPageServer(pageUsecase)
 
