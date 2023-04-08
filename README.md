@@ -2,6 +2,10 @@
 
 [![Test](https://github.com/unknowntpo/page/actions/workflows/main.yml/badge.svg?event=push)](https://github.com/unknowntpo/page/actions/workflows/main.yml)
 
+## Getting Started
+
+> TODO
+
 ## Redis Storage Design
 
 ### Goals:
@@ -67,6 +71,9 @@ The reason is that `cjson` stores data in text format it means that , so if we n
 
 > - **Time Complexity**: O(1)
 > - **RTT**: 1
+
+### Drawback of this design
+> - TTL can not be adjusted because the linked list will broken.
 
 ## TODO: ScyllaDB
 
