@@ -8,7 +8,7 @@
 > 1. Make sure that every operation is 1 RTT (Round-trip time)
 > 2. Make sure that related data structure is stored in
 
-First one is achieved by using lua script, it's convenient because every lua script is ensured to be executed atomicly, there's no way to interrupt this, so we don't use something like `MULTI`, `EXEC`, `WATCH`, which is hard to use them within 1 RTT. 
+First one is achieved by using lua script, it's convenient because every lua script is ensured to be executed atomically, there's no way to interrupt this, so we don't use something like `MULTI`, `EXEC`, `WATCH`, which is hard to use them within 1 RTT.
 
 The Second one can be achieved by using Hash Tag 
 see [Redis cluster specification](https://redis.io/docs/reference/cluster-spec/) for more information.
