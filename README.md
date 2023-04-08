@@ -14,7 +14,7 @@ PostgreSQL implements MVCC, and for the deleted row, `tx_max` field will be mark
 This will cause `Index Scan` require more disk IO because the actual data is spreaded across multiple pages.
 
 Although we can use some trick like:
-- Using online clustering tool e.g. `pg_repack` to reorganize table 
+- Using online clustering tool e.g. [`pg_repack`](https://reorg.github.io/pg_repack/) to reorganize table 
 - Put data with similar expired time under same table, and Drop the table if all rows are expired.
 
 But I think this will increase complexity
