@@ -62,7 +62,7 @@ The reason is that `cjson` stores data in text format it means that , so if we n
 
 
   See [ZREMRANGEBYSCORE command](https://redis.io/commands/zremrangebyscore/) for more information.
-  
+
 #### GetPage
 
 > - **Time Complexity**: O(1)
