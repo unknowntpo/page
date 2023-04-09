@@ -39,7 +39,7 @@ func TestRedisRepo(t *testing.T) {
 *
  */
 
-var _ = Describe("PageRepo", func() {
+var _ = Describe("PageRepo", Ordered, func() {
 	var (
 		repo   domain.PageRepo
 		client *redis.Client
