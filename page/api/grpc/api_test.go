@@ -120,7 +120,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 		})
 	})
 
-	When("GetHead is called", func() {
+	Describe("GetHead", func() {
 		var (
 			err     error
 			res     *connect.Response[pb.GetHeadResponse]

@@ -119,23 +119,28 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 	}
 
 	// Create a Lua script to get the max score and add a new value
-	script := redis.NewScript(`
-		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1], KEYS[2])
-		redis.log(redis.LOG_NOTICE, "got ARGV", ARGV[1])
+	script := redis.NewScript(fmt.Sprintf(`
+    local listMetaKey = KEYS[1]
+    local listKeyByUser = KEYS[2]
+    local expireTime = ARGV[1]
 
-		-- KEYS[1]: pageMetaKey
-		-- KEYS[2]: listKeyByUser
-		-- ARGV[1]: currentTimestamp
+		if redis.call("EXISTS", listMetaKey) == 0 then
+      return { err = %s }
+    end
 
 		-- get head from pageMeta
-		local headPageKey = redis.call("HGET", KEYS[1], "head")
-		redis.log(redis.LOG_NOTICE, "before check, got headPageKey", headPageKey)
+		local headPageKey = redis.call("HGET", listMetaKey, "head")
+
+    -- edge case: list exist but list has no page
+    if headPageKey == "" then
+      return ""
+    end
 
 		-- check if head does exist
 		if redis.call("EXISTS", headPageKey) == 0 then
-			-- not exist
-			-- -- means head is expired, use ZREMRANGEBYSCORE to remove expired key
-			redis.call("ZREMRANGEBYSCORE", KEYS[2], "-inf", ARGV[1])
+			-- means head is expired, use ZREMRANGEBYSCORE to remove expired key
+			redis.call("ZREMRANGEBYSCORE", listKeyByUser, 0, expireTime)
+
 			-- -- set pageMeta.head to oldest key that doesn't expired
 			headPageKey = redis.call("ZRANGE", KEYS[2], 0, "+inf", "BYSCORE", "LIMIT", 0, 1)
 			redis.log(redis.LOG_NOTICE, "got headPageKey", headPageKey)
@@ -145,16 +150,18 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 			return headPageKey
 		end
 
-		redis.log(redis.LOG_NOTICE, "after check, got headPageKey", headPageKey)
-
 		return headPageKey
-	`)
+	`, ErrListNotExist.Error()))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
-		return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
+		switch {
+		case strings.Contains(err.Error(), ErrListNotExist.Error()):
+			return "", ErrListNotExist
+		default:
+			return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
+		}
 	}
-
 	fmt.Println("\ngot pageHead", result.(string))
 	return domain.PageKey(result.(string)), nil
 }

@@ -82,6 +82,51 @@ var _ = Describe("PageRepo", func() {
 		})
 	})
 
+	Describe("GetHead", func() {
+		var (
+			userID  int64
+			listKey domain.ListKey
+			pageKey domain.PageKey
+			err     error
+		)
+		JustBeforeEach(func() {
+			pageKey, err = repo.GetHead(context.Background(), userID, listKey)
+		})
+		When("list does not exist", func() {
+			BeforeEach(func() {
+				userID = 33
+				listKey = "notExist"
+			})
+			It("should return ErrListNotExist", func() {
+				Expect(err.Error()).To(ContainSubstring(ErrListNotExist.Error()))
+			})
+		})
+		When("list exist but there's no page inside", func() {
+			BeforeEach(func() {
+				userID = 33
+				listKey = "existButEmpty"
+				// create list first
+				Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
+			})
+			It("should return empty pageKey", func() {
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(string(pageKey)).To(Equal(""))
+			})
+		})
+		PWhen("head expired", func() {
+			/*
+				BeforeEach(func() {
+					userID = 33
+					listKey = "notExist"
+				})
+				It("should return ErrListNotExist", func() {
+					Expect(err.Error()).To(ContainSubstring(ErrListNotExist.Error()))
+				})
+			*/
+		})
+	})
+
+	// Normal path
 	Context("SetPage is called", func() {
 		Context("NewList hasn't been called", func() {
 			var (
