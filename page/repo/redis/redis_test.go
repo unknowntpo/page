@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -230,25 +231,46 @@ var _ = Describe("PageRepo", Ordered, func() {
 					}
 
 					assertActualPageData := func() {
-						// get content of `<listKey>-meta:<userID>`, make sure head, tail, nextCandidate is there
-						rangeOpts := &redis.ZRangeBy{
-							Min: "0",
-							Max: "+inf",
+						gotKeysFromPages := func(ps []domain.Page) []string {
+							out := make([]string, 0, len(ps))
+							for _, p := range ps {
+								out = append(out, string(p.Key))
+							}
+							return out
 						}
-						res, err := client.ZRangeByScore(
-							context.Background(),
-							string(domain.GenerateListKeyByUserID(listKey, userID)),
-							rangeOpts,
-						).Result()
-						Expect(err).ShouldNot(HaveOccurred())
 
-						fmt.Println("want pageList: ", debug.Debug(pages))
+						gotPages := make([]domain.Page, 0, len(pages))
 
-						fmt.Println("pageList: ", debug.Debug(res))
+						keys := gotKeysFromPages(pages)
+						for _, pageKey := range keys {
+							script := redis.NewScript(`
+                local pageKey = KEYS[1]
+                local res = redis.call('JSON.GET', pageKey, '.')
+                return res
+              `)
+							result, err := script.Run(
+								context.Background(),
+								client,
+								[]string{pageKey}).
+								Result()
+							Expect(err).ShouldNot(HaveOccurred())
+
+							p := domain.Page{}
+							json.Unmarshal([]byte(result.(string)), &p)
+							gotPages = append(gotPages, p)
+						}
+
+						fmt.Println("gotPages", debug.Debug(gotPages))
+						fmt.Println("pages", debug.Debug(pages))
+
+						// clean gotPages.next because pages doesn't have next info
 						for i := 0; i < len(pages); i++ {
-							Expect(res[i]).To(Equal(string(pages[i].Key)))
+							gotPages[i].Next = ""
 						}
+
+						Expect(gotPages).To(Equal(pages))
 					}
+
 					assertListMeta()
 					assertPageList()
 					assertActualPageData()
