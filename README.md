@@ -4,6 +4,32 @@
 
 ## Getting Started
 
+See help messages:
+
+```
+Usage:
+  help          print this help message
+  mock/gen      generate mock $(IFASE) implementation against interface inside internal/domain, e.g. make mock/gen IFASE=PageUsecase
+  proto/gen     generate code from grpc proto
+  redis/setup   set up development environment
+  redis/flush   wipe out data in redis
+  redis/down    delete redis container
+  test          run unit tests
+  build         build the binary
+```
+
+Start redis-stack container
+
+```
+$ make redis/setup
+````
+
+Build and run binary
+
+```
+$ make build && ./bin/server
+```
+
 > TODO
 
 ## Choice of Database
@@ -25,6 +51,9 @@ But I think this will increase complexity
 - Insertion is faster than PostgreSQL
 
 ## Choice of gRPC package
+
+To be honest, it's because I can't generate correct gRPC .go file with Google gRPC package.
+The command is too hard to use. 
 
 ## Redis Storage Design
 
