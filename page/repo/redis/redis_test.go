@@ -127,8 +127,8 @@ var _ = Describe("PageRepo", func() {
 	})
 
 	// Normal path
-	Context("SetPage is called", func() {
-		Context("NewList hasn't been called", func() {
+	Describe("SetPage", func() {
+		Context("List does not exist", func() {
 			var (
 				listKey domain.ListKey
 				p       domain.Page
@@ -137,12 +137,12 @@ var _ = Describe("PageRepo", func() {
 				userID int64 = 33
 			)
 			BeforeEach(func() {
-				listKey = domain.ListKey("testList")
-				// Expect(repo.NewList(context.Background(), userID, listKey)).ShouldNot(HaveOccurred())
+				listKey = domain.ListKey("notExistKey")
 			})
 			It("should return ResourceNotFound error", func() {
 				_, err := repo.SetPage(context.Background(), userID, listKey, p)
 				Expect(errors.KindIs(err, errors.ResourceNotFound)).To(BeTrue())
+				Expect(errors.Is(err, ErrListNotExist)).To(BeTrue())
 			})
 		})
 		Context("NewList has been called before", func() {

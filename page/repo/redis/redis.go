@@ -214,7 +214,7 @@ func (r *pageRepoImpl) setPage(
 
 		if redis.call("EXISTS", listMetaKeyByUser) == 0 then
 			-- HashMap doesn't exist, return error
-			return {err = "ResourceNotFound"}
+			return {err = "%s"}
 		end
 
 		if redis.call("ZADD",listKeyByUser, dueTime, pageKey) ~= 1 then
@@ -242,13 +242,13 @@ func (r *pageRepoImpl) setPage(
 		redis.call('EXPIRE', pageKey, %d)
 
 		return pageKey
-	`, ttl))
+	`, ErrListNotExist.Error(), ttl))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), "ResourceNotFound"):
-			return "", errors.Wrap(errors.ResourceNotFound, fmt.Sprintf("pageList %s for userID [%d] not found, call NewList first", listKey, userID), err)
+		case strings.Contains(err.Error(), ErrListNotExist.Error()):
+			return "", ErrListNotExist
 		default:
 			return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
 		}
