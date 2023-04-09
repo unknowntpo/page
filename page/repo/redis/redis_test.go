@@ -217,18 +217,18 @@ var _ = Describe("PageRepo", Ordered, func() {
 							Min: "0",
 							Max: "+inf",
 						}
-						res, err := client.ZRangeByScore(
+						res, err := client.ZRangeByScoreWithScores(
 							context.Background(),
 							string(domain.GenerateListKeyByUserID(listKey, userID)),
 							rangeOpts,
 						).Result()
 						Expect(err).ShouldNot(HaveOccurred())
 
-						fmt.Println("pageList: ", debug.Debug(res))
+						fmt.Println("sortedSet: ", debug.Debug(res))
 						fmt.Println("pages: ", debug.Debug(pages))
 
 						for i := 0; i < len(pages); i++ {
-							Expect(res[i]).To(Equal(string(pages[i].Key)))
+							Expect(res[i].Member).To(Equal(string(pages[i].Key)))
 						}
 					}
 
