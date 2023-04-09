@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	connect "github.com/bufbuild/connect-go"
 	"github.com/unknowntpo/page/domain"
@@ -125,7 +126,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 			userID              int64
 			listKey             string
 			err                 error
-			expectedHeadPageKey = domain.GeneratePageKey()
+			expectedHeadPageKey = domain.GeneratePageKey(time.Now())
 		)
 		const (
 			existListKey domain.ListKey = "existListKey"

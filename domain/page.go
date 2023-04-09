@@ -70,8 +70,7 @@ type Article struct {
 	Content string
 }
 
-func GeneratePageKey() PageKey {
-	now := time.Now()
+func GeneratePageKey(now time.Time) PageKey {
 	entropy := rand.New(rand.NewSource(uint64(now.UnixNano())))
 	ms := ulid.Timestamp(now)
 	ulid, err := ulid.New(ms, entropy)

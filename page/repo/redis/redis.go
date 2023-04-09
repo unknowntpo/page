@@ -25,9 +25,7 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 
 func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain.ListKey) error {
 	listMetaKeyByUser := domain.GenerateListMetaKeyByUserID(listKey, userID)
-	nextCandidate := domain.GeneratePageKey()
 	keys := []string{string(listMetaKeyByUser)}
-	args := []any{string(nextCandidate)}
 
 	// Create a Lua script to get the max score and add a new value
 	script := redis.NewScript(fmt.Sprintf(`
@@ -37,13 +35,13 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 		if redis.call("EXISTS", KEYS[1]) == 1 then
 			return {err = "%s"}
 		end
-		-- init listMeta, set head, tail, nextCandidate to ""
-		redis.call("HSET", KEYS[1], "head", "", "tail", "", "nextCandidate", ARGV[1])
+		-- init listMeta, set head, tail to ""
+		redis.call("HSET", KEYS[1], "head", "", "tail", "")
 
 		return {ok = "status"}
 	`, domain.ErrListAlreadyExists.Error()))
 
-	_, err := script.Run(context.Background(), r.client, keys, args...).Result()
+	_, err := script.Run(context.Background(), r.client, keys).Result()
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), domain.ErrListAlreadyExists.Error()):
@@ -160,9 +158,13 @@ func (r *pageRepoImpl) setPage(
 	// implementation
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
 	listMetaKeyByUser := domain.GenerateListMetaKeyByUserID(listKey, userID)
-	p.Key = domain.GeneratePageKey()
 
-	// pageContent := p.GetJSONContent()
+	// NOTE: the time.Time to generate pageKey should be the same as the one used
+	// to set score (expired time of the pageKey in sortedset).
+	// Otherwise, the order of expired time can't be ensured
+	now := time.Now()
+	p.Key = domain.GeneratePageKey(now)
+
 	pageContent := p.Marshal()
 
 	keys := []string{
@@ -174,7 +176,7 @@ func (r *pageRepoImpl) setPage(
 		// actual page data
 		pageContent,
 		// score of the page we wanna add (will be expire time of pageKey)
-		time.Now().Add(domain.DefaultPageTTL).Unix(),
+		now.Add(domain.DefaultPageTTL).Unix(),
 	}
 
 	ttl := int(domain.DefaultPageTTL.Seconds())
