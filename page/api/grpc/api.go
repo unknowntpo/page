@@ -32,7 +32,7 @@ func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewLis
 	if err := s.useCase.NewList(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey)); err != nil {
 		log.Println("failed on s.useCase.NewList", err)
 		switch {
-		case errors.KindIs(err, errors.ResourceAlreadyExist):
+		case errors.Is(err, domain.ErrListAlreadyExists):
 			return nil, connect.NewError(connect.CodeAlreadyExists, domain.ErrListAlreadyExists)
 		default:
 			log.Println("failed on s.useCase.NewList", err)

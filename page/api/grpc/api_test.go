@@ -12,7 +12,6 @@ import (
 	"github.com/unknowntpo/page/domain/mock"
 	pb "github.com/unknowntpo/page/gen/proto/page"
 	"github.com/unknowntpo/page/gen/proto/page/pageconnect"
-	"github.com/unknowntpo/page/pkg/errors"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -83,7 +82,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 					if string(listKey) == validListKey {
 						return nil
 					}
-					return errors.New(errors.ResourceAlreadyExist, "already exist")
+					return domain.ErrListAlreadyExists
 				}).AnyTimes()
 			res, err = client.NewList(context.Background(), connect.NewRequest(&pb.NewListRequest{
 				ListKey: listKey,
@@ -106,7 +105,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 				listKey = invalidUserID
 			})
 			It("should return invalid argument", func() {
-				Expect(errors.Is(err, domain.ErrInvalidListKey)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring(domain.ErrInvalidListKey.Error()))
 			})
 		})
 		When("userID not valid", func() {
@@ -114,8 +113,8 @@ var _ = Describe("PageAPI", Ordered, func() {
 				userID = 0
 				listKey = validListKey
 			})
-			It("should return invalid argument", func() {
-				Expect(errors.Is(err, domain.ErrInvalidUserID)).To(BeTrue())
+			It("should return invalid userID error", func() {
+				Expect(err.Error()).To(ContainSubstring(domain.ErrInvalidUserID.Error()))
 			})
 		})
 	})
