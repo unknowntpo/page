@@ -122,27 +122,49 @@ var _ = Describe("PageAPI", Ordered, func() {
 
 	Describe("GetHead", func() {
 		var (
-			err     error
-			res     *connect.Response[pb.GetHeadResponse]
-			userID  int64
-			listKey string
+			res                 *connect.Response[pb.GetHeadResponse]
+			userID              int64
+			listKey             string
+			err                 error
+			expectedHeadPageKey = domain.GeneratePageKey()
 		)
+		const (
+			existListKey domain.ListKey = "existListKey"
+		)
+
 		BeforeEach(func() {
 			userID = 33
 			mockPageUsecase.
 				EXPECT().
 				GetHead(gomock.Any(), userID, gomock.Any()).
-				// FIXME: return head by input
-				Return(gomock.Any(), nil).Times(1)
+				DoAndReturn(func(ctx context.Context, userID int64, listKey domain.ListKey) (domain.PageKey, error) {
+					if listKey != existListKey {
+						return "", domain.ErrListNotFound
+					}
+					return expectedHeadPageKey, nil
+				}).AnyTimes()
+		})
+		JustBeforeEach(func() {
 			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
 				ListKey: listKey,
 				UserID:  userID,
 			}))
-			Expect(err).ShouldNot(HaveOccurred())
 		})
 		Context("normal", func() {
+			BeforeEach(func() {
+				listKey = string(existListKey)
+			})
 			It("should return expected PageKey", func() {
-				Expect(res.Msg.PageKey).To(Equal(listKey))
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(res.Msg.PageKey).To(Equal(string(expectedHeadPageKey)))
+			})
+		})
+		Context("list not found", func() {
+			BeforeEach(func() {
+				listKey = "notExistList"
+			})
+			It("should return domain.ErrListNotFound", func() {
+				Expect(err.Error()).To(ContainSubstring(domain.ErrListNotFound.Error()))
 			})
 		})
 	})
