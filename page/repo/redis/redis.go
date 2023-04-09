@@ -89,7 +89,7 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 
 	keys := []string{string(listMetaKey), string(listKeyByUser)}
 	args := []any{
-		time.Now().Add(-1 * domain.DefaultPageTTL).Unix(),
+		time.Now().Add(domain.DefaultPageTTL).UnixNano(),
 	}
 
 	// Create a Lua script to get the max score and add a new value
@@ -176,7 +176,8 @@ func (r *pageRepoImpl) setPage(
 		// actual page data
 		pageContent,
 		// score of the page we wanna add (will be expire time of pageKey)
-		now.Add(domain.DefaultPageTTL).Unix(),
+		// NOTE: Use UnixNano to avoid collision on same score
+		now.Add(domain.DefaultPageTTL).UnixNano(),
 	}
 
 	ttl := int(domain.DefaultPageTTL.Seconds())
