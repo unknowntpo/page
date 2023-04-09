@@ -27,14 +27,18 @@ $ make redis/setup
 Build and run binary
 
 ```
-$ make build && ./bin/server
+$ make run/server
 ```
 
-> TODO
+Run example client binary
+
+```
+$ make run/client
+```
 
 ## Choice of Database
 
-:question: Why not PostgreSQL ?
+:question: **Why not PostgreSQL ?**
 
 PostgreSQL implements MVCC, and for the deleted row, `tx_max` field will be marked, and when it comes to vacuum, this deleted row (dead tuple) will be cleaned. If we delete data frequently, there will be a lot of dead tuples in heap page.
 This will cause `Index Scan` require more disk IO because the actual data is spreaded across multiple pages.
@@ -45,7 +49,7 @@ Although we can use some trick like:
 
 But I think this will increase complexity
 
-:question: Why I choose Redis ?
+:question: **Why I choose Redis ?**
 
 - It can delete expired key automatically
 - Insertion is faster than PostgreSQL
@@ -125,12 +129,15 @@ The reason is that `cjson` stores data in text format it means that , so if we n
 > - TTL can not be adjusted because the linked list will broken.
 > - Redis is in-memory database, and we don't have a way to swap unused object into disk file, this will require lots of Redis node, which will be very expensive
 
-## TODO: ScyllaDB
+## TODO:
+### Switch to ScyllaDB
 
 Pros:
 - Cloud native, high availability, don't need to worry about sharding things.
-- Can use TTL with Time Window Compaction Strategy (TWCS) to Drop whole expired SSTable.
+- Can use TTL with [Time Window Compaction Strategy (TWCS)](https://docs.scylladb.com/stable/kb/ttl-facts.html) to Drop whole expired SSTable.
 
-# Reference:
-- [Time to Live (TTL) and Compaction¶](https://docs.scylladb.com/stable/kb/ttl-facts.html)
+### Use `Packer`, `Terraform` to deploy services to cloud
 
+### K6 Pressure Test
+
+### Use structured logging package like [zerolog](https://github.com/rs/zerolog)

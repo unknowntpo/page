@@ -43,6 +43,15 @@ test:
 	 -cover \
 	 $(if $(FOCUS), -ginkgo.focus '$(FOCUS)')
 
-## build: build the binary
+## build: build the server binary
 build:
 	go build -o bin/server ./cmd/server
+
+## run/server: build and run the server binary
+run/server: build
+	./bin/server
+
+## run/client: build and run the client binary
+run/client:
+	go run ./cmd/client/client.go
+
