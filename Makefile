@@ -21,9 +21,18 @@ mock/gen:
 ## proto/gen: generate code from grpc proto
 proto/gen:
 	buf generate
-	# protoc --go_out=. --go_opt=paths=source_relative \
-    # --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-	# ./internal/api/page/grpc/page/page.proto
+
+## redis/setup: set up development environment
+redis/setup:
+	docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:6.2.6-v6
+
+## redis/flush: wipe out data in redis
+redis/flush:
+	docker exec -it redis-stack redis-cli -c 'FLUSHALL'
+
+## redis/down: delete redis container
+redis/down:
+	docker rm -f redis-stack
 
 TESTPKG ?= ./...
 
