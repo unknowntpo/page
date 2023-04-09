@@ -97,8 +97,8 @@ var _ = Describe("PageRepo", func() {
 				userID = 33
 				listKey = "notExist"
 			})
-			It("should return ErrListNotExist", func() {
-				Expect(err.Error()).To(ContainSubstring(ErrListNotExist.Error()))
+			It("should return domain.ErrListNotFound", func() {
+				Expect(errors.Is(err, domain.ErrListNotFound)).To(BeTrue())
 			})
 		})
 		When("list exist but there's no page inside", func() {
@@ -139,10 +139,9 @@ var _ = Describe("PageRepo", func() {
 			BeforeEach(func() {
 				listKey = domain.ListKey("notExistKey")
 			})
-			It("should return ResourceNotFound error", func() {
+			It("should return domain.ErrListNotFound error", func() {
 				_, err := repo.SetPage(context.Background(), userID, listKey, p)
-				Expect(errors.KindIs(err, errors.ResourceNotFound)).To(BeTrue())
-				Expect(errors.Is(err, ErrListNotExist)).To(BeTrue())
+				Expect(errors.Is(err, domain.ErrListNotFound)).To(BeTrue())
 			})
 		})
 		Context("NewList has been called before", func() {

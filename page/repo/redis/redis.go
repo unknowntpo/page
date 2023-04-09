@@ -14,11 +14,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var (
-	ErrListNotExist = errors.New(errors.ResourceNotFound, "ListNotExist")
-	ErrPageNotFound = errors.New(errors.ResourceNotFound, "PageNotFound")
-)
-
 type pageRepoImpl struct {
 	// any fields needed for implementation
 	client *redis.Client
@@ -61,25 +56,6 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 }
 
 func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
-	// implementation
-	// pageStr, err := r.client.Get(ctx, string(pageKey)).Result()
-	// if err != nil {
-	// 	switch err {
-	// 	case redis.Nil:
-	// 		return domain.Page{}, errors.Wrap(errors.ResourceNotFound, "", err)
-	// 	default:
-	// 		return domain.Page{}, errors.Wrap(errors.Internal, "failed on r.client.Get", err)
-	// 	}
-	// }
-	// p := domain.Page{}
-	// if err := json.Unmarshal([]byte(pageStr), &p); err != nil {
-	// 	return domain.Page{}, errors.Wrap(errors.Internal, "failed on json.Unmarshal", err)
-	// }
-	// // We need to set back pageKey because it doesn't exist in p yet
-	// p.Key = pageKey
-	// return p, nil
-
-	// New implementation: RedisJSON
 	keys := []string{string(pageKey)}
 	args := []any{}
 
@@ -97,7 +73,7 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), errors.ResourceNotFound.String()):
-			return domain.Page{}, ErrPageNotFound
+			return domain.Page{}, domain.ErrPageNotFound
 		}
 		return domain.Page{}, errors.Wrap(errors.Internal, " failed on script.Run", err)
 	}
@@ -125,7 +101,7 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
     local expireTime = ARGV[1]
 
 		if redis.call("EXISTS", listMetaKey) == 0 then
-      return { err = %s }
+      return { err = "%s" }
     end
 
 		-- get head from pageMeta
@@ -151,13 +127,13 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 		end
 
 		return headPageKey
-	`, ErrListNotExist.Error()))
+	`, domain.ErrListNotFound.Error()))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), ErrListNotExist.Error()):
-			return "", ErrListNotExist
+		case strings.Contains(err.Error(), domain.ErrListNotFound.Error()):
+			return "", domain.ErrListNotFound
 		default:
 			return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
 		}
@@ -240,13 +216,13 @@ func (r *pageRepoImpl) setPage(
 		redis.call('EXPIRE', pageKey, %d)
 
 		return pageKey
-	`, ErrListNotExist.Error(), ttl))
+	`, domain.ErrListNotFound.Error(), ttl))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), ErrListNotExist.Error()):
-			return "", ErrListNotExist
+		case strings.Contains(err.Error(), domain.ErrListNotFound.Error()):
+			return "", domain.ErrListNotFound
 		default:
 			return "", errors.Wrap(errors.Internal, " failed on script.Run", err)
 		}

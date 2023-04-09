@@ -105,4 +105,5 @@ var (
 	ErrListAlreadyExists = errors.New(errors.ResourceAlreadyExist, "list already exist")
 	ErrListNotFound      = errors.New(errors.ResourceNotFound, "list not found")
 	ErrInternal          = errors.New(errors.Internal, "Internal Server Error")
+	ErrPageNotFound      = errors.New(errors.ResourceNotFound, "page not found")
 )
