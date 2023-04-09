@@ -36,6 +36,18 @@ Run example client binary
 $ make run/client
 ```
 
+Run the tests
+
+```
+$ make test
+```
+
+or the run specific tests:
+
+```
+$ make test VERBOSE=1 TESTPKG=./page/repo/redis FOCUS="SetPage.*related data.*"
+```
+
 ## Choice of Database
 
 :question: **Why not PostgreSQL ?**
