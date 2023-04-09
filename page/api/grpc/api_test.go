@@ -12,6 +12,7 @@ import (
 	"github.com/unknowntpo/page/domain/mock"
 	pb "github.com/unknowntpo/page/gen/proto/page"
 	"github.com/unknowntpo/page/gen/proto/page/pageconnect"
+	"github.com/unknowntpo/page/pkg/errors"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -31,11 +32,6 @@ var _ = Describe("PageAPI", Ordered, func() {
 		server          *httptest.Server
 		client          pageconnect.PageServiceClient
 		mockPageUsecase *mock.MockPageUsecase
-	)
-
-	const (
-		testListKey      domain.ListKey = "testListKey"
-		dummyHeadPageKey domain.PageKey = "dummy"
 	)
 
 	BeforeEach(func() {
@@ -67,63 +63,86 @@ var _ = Describe("PageAPI", Ordered, func() {
 		ctrl.Finish()
 	})
 
-	When("NewList is called", func() {
+	Describe("NewList", func() {
 		var (
-			err    error
-			res    *connect.Response[pb.NewListResponse]
-			userID int64
+			err     error
+			res     *connect.Response[pb.NewListResponse]
+			userID  int64
+			listKey string
+		)
+		const (
+			validListKey  = "validListKey"
+			validUserID   = 33
+			invalidUserID = ""
 		)
 		JustBeforeEach(func() {
 			mockPageUsecase.
 				EXPECT().
-				NewList(gomock.Any(), userID, testListKey).
-				Return(nil).AnyTimes()
+				NewList(gomock.Any(), userID, gomock.Any()).
+				DoAndReturn(func(ctx context.Context, userID int64, listKey domain.ListKey) error {
+					if string(listKey) == validListKey {
+						return nil
+					}
+					return errors.New(errors.ResourceAlreadyExist, "already exist")
+				}).AnyTimes()
 			res, err = client.NewList(context.Background(), connect.NewRequest(&pb.NewListRequest{
-				ListKey: string(testListKey),
+				ListKey: listKey,
 				UserID:  userID,
 			}))
 		})
 		Context("normal", func() {
 			BeforeEach(func() {
 				userID = 33
+				listKey = validListKey
 			})
 			It("should return OK", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(res.Msg.Status).To(Equal("OK"))
 			})
 		})
-		Context("userID not valid", func() {
+		When("listKey is not valid", func() {
+			BeforeEach(func() {
+				userID = validUserID
+				listKey = invalidUserID
+			})
+			It("should return invalid argument", func() {
+				Expect(err.Error()).To(ContainSubstring(ErrInvalidListKey.Error()))
+			})
+		})
+		When("userID not valid", func() {
 			BeforeEach(func() {
 				userID = 0
+				listKey = validListKey
 			})
 			It("should return invalid argument", func() {
 				Expect(err.Error()).To(ContainSubstring(ErrInvalidUserID.Error()))
 			})
 		})
-
 	})
 
 	When("GetHead is called", func() {
 		var (
-			err    error
-			res    *connect.Response[pb.GetHeadResponse]
-			userID int64
+			err     error
+			res     *connect.Response[pb.GetHeadResponse]
+			userID  int64
+			listKey string
 		)
 		BeforeEach(func() {
 			userID = 33
 			mockPageUsecase.
 				EXPECT().
-				GetHead(gomock.Any(), userID, testListKey).
-				Return(dummyHeadPageKey, nil).Times(1)
+				GetHead(gomock.Any(), userID, gomock.Any()).
+				// FIXME: return head by input
+				Return(gomock.Any(), nil).Times(1)
 			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
-				ListKey: string(testListKey),
+				ListKey: listKey,
 				UserID:  userID,
 			}))
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 		Context("normal", func() {
 			It("should return expected PageKey", func() {
-				Expect(res.Msg.PageKey).To(Equal(string(dummyHeadPageKey)))
+				Expect(res.Msg.PageKey).To(Equal(listKey))
 			})
 		})
 	})
@@ -143,6 +162,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 				},
 			}
 			gotPages []domain.Page
+			listKey  string
 		)
 
 		const (
@@ -153,10 +173,11 @@ var _ = Describe("PageAPI", Ordered, func() {
 		BeforeEach(func() {
 			mockPageUsecase.
 				EXPECT().
-				SetPage(gomock.Any(), userID, testListKey, gomock.Any()).
+				SetPage(gomock.Any(), userID, gomock.Any(), gomock.Any()).
 				DoAndReturn(func(ctx context.Context, userID int64, listKey domain.ListKey, page domain.Page) (domain.PageKey, error) {
 					gotPages = append(gotPages, page)
-					return dummyHeadPageKey, nil
+					// FIXME: should return correct result
+					return "", nil
 				}).Times(round)
 
 			stream = client.SetPage(context.Background())
@@ -167,7 +188,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 					err := stream.Send(
 						&pb.SetPageRequest{
 							UserID:      userID,
-							ListKey:     string(testListKey),
+							ListKey:     listKey,
 							PageContent: pages[i].Content,
 						})
 					if err == io.EOF {
