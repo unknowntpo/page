@@ -225,6 +225,8 @@ var _ = Describe("PageRepo", Ordered, func() {
 						Expect(err).ShouldNot(HaveOccurred())
 
 						fmt.Println("pageList: ", debug.Debug(res))
+						fmt.Println("pages: ", debug.Debug(pages))
+
 						for i := 0; i < len(pages); i++ {
 							Expect(res[i]).To(Equal(string(pages[i].Key)))
 						}
