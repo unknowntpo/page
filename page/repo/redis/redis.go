@@ -229,8 +229,6 @@ func (r *pageRepoImpl) setPage(
 			local oldTailPageKey = redis.call("HGET", listMetaKeyByUser, "tail")
 			-- local quotedPageKey = "'" .. pageKey .. "'"
 			local quotedPageKey = [["]] .. pageKey .. [["]]
-			redis.log(redis.LOG_NOTICE, "quotedPageKey", quotedPageKey)
-			redis.log(redis.LOG_NOTICE, "oldTailPageKey", oldTailPageKey)
 			redis.call("JSON.SET", oldTailPageKey, ".next", quotedPageKey)
 		end
 
