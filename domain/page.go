@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/unknowntpo/page/pkg/errors"
+
 	"golang.org/x/exp/rand"
 
 	"github.com/oklog/ulid/v2"
@@ -94,4 +96,13 @@ func GenerateListMetaKeyByUserID(listKey ListKey, userID int64) PageMetaKey {
 const (
 	PersonalBoardKey ListKey       = "personal"
 	DefaultPageTTL   time.Duration = 24 * time.Hour
+)
+
+// Errors defined by our domain
+var (
+	ErrInvalidUserID     = errors.New(errors.BadRequest, "userID should be greater than 0")
+	ErrInvalidListKey    = errors.New(errors.BadRequest, "listKey can not be empty")
+	ErrListAlreadyExists = errors.New(errors.ResourceAlreadyExist, "list already exist")
+	ErrListNotFound      = errors.New(errors.ResourceNotFound, "list not found")
+	ErrInternal          = errors.New(errors.Internal, "Internal Server Error")
 )

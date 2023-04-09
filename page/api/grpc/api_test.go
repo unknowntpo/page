@@ -106,7 +106,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 				listKey = invalidUserID
 			})
 			It("should return invalid argument", func() {
-				Expect(err.Error()).To(ContainSubstring(ErrInvalidListKey.Error()))
+				Expect(errors.Is(err, domain.ErrInvalidListKey)).To(BeTrue())
 			})
 		})
 		When("userID not valid", func() {
@@ -115,7 +115,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 				listKey = validListKey
 			})
 			It("should return invalid argument", func() {
-				Expect(err.Error()).To(ContainSubstring(ErrInvalidUserID.Error()))
+				Expect(errors.Is(err, domain.ErrInvalidUserID)).To(BeTrue())
 			})
 		})
 	})

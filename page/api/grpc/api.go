@@ -24,31 +24,23 @@ type pageServer struct {
 	useCase domain.PageUsecase
 }
 
-var (
-	ErrInvalidUserID     = errors.New(errors.BadRequest, "userID should be greater than 0")
-	ErrInvalidListKey    = errors.New(errors.BadRequest, "listKey can not be empty")
-	ErrListAlreadyExists = errors.New(errors.ResourceAlreadyExist, "list already exist")
-	ErrListNotFound      = errors.New(errors.ResourceNotFound, "list not found")
-	ErrInternal          = errors.New(errors.Internal, "Internal Server Error")
-)
-
 func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewListRequest]) (*connect.Response[pb.NewListResponse], error) {
 	// verify inpput
 	// TODO: Put verification inside domain
 	if req.Msg.ListKey == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, ErrInvalidListKey)
+		return nil, connect.NewError(connect.CodeInvalidArgument, domain.ErrInvalidListKey)
 	}
 	if req.Msg.UserID <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, ErrInvalidUserID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, domain.ErrInvalidUserID)
 	}
 	if err := s.useCase.NewList(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey)); err != nil {
 		log.Println("failed on s.useCase.GetHead", err)
 		switch {
 		case errors.KindIs(err, errors.ResourceAlreadyExist):
-			return nil, connect.NewError(connect.CodeAlreadyExists, ErrListAlreadyExists)
+			return nil, connect.NewError(connect.CodeAlreadyExists, domain.ErrListAlreadyExists)
 		default:
 			log.Println("failed on s.useCase.NewList", err)
-			return nil, connect.NewError(connect.CodeInternal, errors.New(errors.Internal, "something goes wrong"))
+			return nil, connect.NewError(connect.CodeInternal, domain.ErrInternal)
 		}
 	}
 	res := connect.NewResponse(&pb.NewListResponse{
@@ -119,7 +111,7 @@ func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.
 			default:
 				// TODO: Which error should we handle ?
 				log.Println("failed on s.useCase.SetPage", err)
-				return connect.NewError(connect.CodeInternal, ErrInternal)
+				return connect.NewError(connect.CodeInternal, domain.ErrInternal)
 			}
 		}
 		p := domain.Page{}
@@ -128,7 +120,7 @@ func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.
 		if err != nil {
 			// TODO: Which error should we handle ?
 			log.Println("failed on s.useCase.SetPage", err)
-			return connect.NewError(connect.CodeAborted, ErrInternal)
+			return connect.NewError(connect.CodeAborted, domain.ErrInternal)
 		}
 		res := connect.NewResponse(&pb.SetPageResponse{
 			PageKey: string(pageKey),
