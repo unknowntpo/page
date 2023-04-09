@@ -30,23 +30,23 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 	args := []any{string(nextCandidate)}
 
 	// Create a Lua script to get the max score and add a new value
-	script := redis.NewScript(`
+	script := redis.NewScript(fmt.Sprintf(`
 		redis.log(redis.LOG_NOTICE, "got KEYS", KEYS[1])
 
 		-- if listMeta exist, return error
 		if redis.call("EXISTS", KEYS[1]) == 1 then
-			return {err = ResourceAlreadyExist}
+			return {err = "%s"}
 		end
 		-- init listMeta, set head, tail, nextCandidate to ""
 		redis.call("HSET", KEYS[1], "head", "", "tail", "", "nextCandidate", ARGV[1])
 
 		return {ok = "status"}
-	`)
+	`, domain.ErrListAlreadyExists.Error()))
 
 	_, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), "ResourceAlreadyExist"):
+		case strings.Contains(err.Error(), domain.ErrListAlreadyExists.Error()):
 			return errors.Wrap(errors.ResourceAlreadyExist, fmt.Sprintf("pageList %s for userID [%d] has already exist", listKey, userID), err)
 		default:
 			return errors.Wrap(errors.Internal, " failed on script.Run", err)

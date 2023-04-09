@@ -44,8 +44,8 @@ func (u *pageUsecaseImpl) GetHead(ctx context.Context, userID int64, listKey dom
 	headKey, err := u.repo.GetHead(ctx, userID, listKey)
 	if err != nil {
 		switch {
-		// case errors.KindIs(err, errors.ResourceNotFound):
-		//	return errors.Wrap(errors.ResourceNotFound, "resource not found", err)
+		case errors.KindIs(err, errors.ResourceNotFound):
+			return "", err
 		default:
 			return "", errors.Wrap(errors.Internal, "failed on u.repo.GetHead", err)
 		}

@@ -9,7 +9,6 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	"github.com/unknowntpo/page/domain"
-	"github.com/unknowntpo/page/infra"
 
 	pageAPI "github.com/unknowntpo/page/page/api/grpc"
 	pageRepo "github.com/unknowntpo/page/page/repo/redis"
@@ -42,7 +41,7 @@ var _ = Describe("PageIntegration", Ordered, func() {
 	)
 
 	BeforeEach(func() {
-		client := infra.NewRedisClient()
+		client := pageRepo.PrepareTestDatabase()
 		repo := pageRepo.NewPageRepo(client)
 		pageUsecase := pageUcase.NewPageUsecase(repo)
 		pageServer := pageAPI.NewPageServer(pageUsecase)
@@ -80,29 +79,21 @@ var _ = Describe("PageIntegration", Ordered, func() {
 			userID  int64  = 123
 		)
 
-		Context("create a new list", func() {
-			It("should not failed", func() {
-				Expect(newList(client, listKey, userID)).ShouldNot(HaveOccurred())
-			})
-		})
+		It("should not failed", func() {
+			Expect(newList(client, listKey, userID)).ShouldNot(HaveOccurred())
+			// can not create same list twice
+			Expect(newList(client, listKey, userID).Error()).To(ContainSubstring(domain.ErrListAlreadyExists.Error()))
+			// set pages
+			Expect(setPage(client, listKey, userID, pages)).ShouldNot(HaveOccurred())
+			_, err := getHead(client, "non-exist-key", userID)
+			Expect(err.Error()).To(ContainSubstring(domain.ErrListNotFound.Error()))
 
-		When("GetHead with non-exist listKey", func() {
-			It("should return ResourceNotFound", func() {
-				Expect(getHead(client, "non-exist-key", userID)).ShouldNot(HaveOccurred())
-			})
-		})
+			head, err := getHead(client, listKey, userID)
+			Expect(err).ShouldNot(HaveOccurred())
 
-		When("GetPage with non-exist pageKey", func() {
-			It("should return ResourceNotFound", func() {
-				_, err := getPages(client, "non-exist head key", userID, len(pages))
-				Expect(err.Error()).To(ContainSubstring("ResourceNotFound"))
-			})
-		})
-
-		When("SetPage with non-exist listKey", func() {
-			It("should return ResourceNotFound", func() {
-				Expect(setPage(client, listKey, userID, pages).Error()).To(ContainSubstring(pageAPI.ErrListNotFound.Error()))
-			})
+			gotPages, err := getPages(client, head, userID, len(pages))
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(gotPages).To(Equal(pages))
 		})
 	})
 })
