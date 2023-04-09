@@ -47,7 +47,7 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), domain.ErrListAlreadyExists.Error()):
-			return errors.Wrap(errors.ResourceAlreadyExist, fmt.Sprintf("pageList %s for userID [%d] has already exist", listKey, userID), err)
+			return domain.ErrListAlreadyExists
 		default:
 			return errors.Wrap(errors.Internal, " failed on script.Run", err)
 		}

@@ -80,6 +80,17 @@ var _ = Describe("PageRepo", func() {
 			}
 			assertFn()
 		})
+		When("NewList is called twice with same listKey", func() {
+			var (
+				err error
+			)
+			BeforeEach(func() {
+				err = repo.NewList(context.Background(), userID, listKey)
+			})
+			It("should return domain.ErrListAlreadyExists", func() {
+				Expect(errors.Is(err, domain.ErrListAlreadyExists)).To(BeTrue())
+			})
+		})
 	})
 
 	Describe("GetHead", func() {
