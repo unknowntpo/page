@@ -19,6 +19,26 @@ func TestRedisRepo(t *testing.T) {
 	RunSpecs(t, "RedisRepo")
 }
 
+/*
+* When NewList is called
+*   ds should be init
+*
+* When SetPage is called
+*   if list doesn't exist
+*     shuold return ResourceNotFound
+*   normal:
+*     call SetPage for three times, data structures should be set
+* When call GetHead
+*   if list doesn't exist
+*
+*
+*
+*
+* k
+*
+*
+ */
+
 var _ = Describe("PageRepo", func() {
 	var (
 		repo   domain.PageRepo

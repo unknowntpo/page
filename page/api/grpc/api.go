@@ -28,6 +28,7 @@ var (
 	ErrInvalidUserID     = errors.New(errors.BadRequest, "userID should be greater than 0")
 	ErrInvalidListKey    = errors.New(errors.BadRequest, "listKey can not be empty")
 	ErrListAlreadyExists = errors.New(errors.ResourceAlreadyExist, "list already exist")
+	ErrListNotFound      = errors.New(errors.ResourceNotFound, "list not found")
 	ErrInternal          = errors.New(errors.Internal, "Internal Server Error")
 )
 

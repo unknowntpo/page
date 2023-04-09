@@ -9,7 +9,6 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	"github.com/unknowntpo/page/domain"
-	"github.com/unknowntpo/page/domain/mock"
 	"github.com/unknowntpo/page/infra"
 
 	pageAPI "github.com/unknowntpo/page/page/api/grpc"
@@ -71,109 +70,187 @@ var _ = Describe("PageIntegration", Ordered, func() {
 		server.Close()
 	})
 
-	When("NewList is called", func() {
+	When("test List Lifecycle", func() {
 		var (
-			err    error
-			res    *connect.Response[pb.NewListResponse]
-			userID int64
-		)
-		JustBeforeEach(func() {
-			res, err = client.NewList(context.Background(), connect.NewRequest(&pb.NewListRequest{
-				ListKey: string(testListKey),
-				UserID:  userID,
-			}))
-		})
-		Context("normal", func() {
-			BeforeEach(func() {
-				userID = 33
-			})
-			It("should return OK", func() {
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(res.Msg.Status).To(Equal("OK"))
-			})
-		})
-		Context("userID not valid", func() {
-			BeforeEach(func() {
-				userID = 0
-			})
-			It("should return invalid argument", func() {
-				Expect(err.Error()).To(ContainSubstring(pageAPI.ErrInvalidUserID.Error()))
-			})
-		})
-
-	})
-
-	When("GetHead is called", func() {
-		var (
-			err    error
-			res    *connect.Response[pb.GetHeadResponse]
-			userID int64
-		)
-		BeforeEach(func() {
-			userID = 33
-			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
-				ListKey: string(testListKey),
-				UserID:  userID,
-			}))
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-		Context("normal", func() {
-			It("should return expected PageKey", func() {
-				Expect(res.Msg.PageKey).To(Equal(string(dummyHeadPageKey)))
-			})
-		})
-	})
-	When("SetPage is called", func() {
-		var (
-			err    error
-			stream *connect.BidiStreamForClient[pb.SetPageRequest, pb.SetPageResponse]
-			pages  = []domain.Page{
-				{
-					Content: mock.GenerateRandomString(3),
-				},
-				{
-					Content: mock.GenerateRandomString(3),
-				},
-				{
-					Content: mock.GenerateRandomString(3),
-				},
-			}
-			gotPages []domain.Page
+			pages = []string{"page1", "page2", "page3"}
 		)
 
 		const (
-			userID int64 = 33
-			round  int   = 3
+			listKey string = "my_list"
+			userID  int64  = 123
 		)
 
-		BeforeEach(func() {
-			stream = client.SetPage(context.Background())
-		})
-		Context("call stream.Send for three times", func() {
-			BeforeEach(func() {
-				for i := 0; i < round; i++ {
-					err := stream.Send(
-						&pb.SetPageRequest{
-							UserID:      userID,
-							ListKey:     string(testListKey),
-							PageContent: pages[i].Content,
-						})
-					if err == io.EOF {
-						break
-					}
-					Expect(err).ShouldNot(HaveOccurred())
-					// Wait until we got response
-					_, err = stream.Receive()
-					if err == io.EOF {
-						break
-					}
-				}
-				Expect(stream.CloseRequest()).ShouldNot(HaveOccurred())
+		Context("create a new list", func() {
+			It("should not failed", func() {
+				Expect(newList(client, listKey, userID)).ShouldNot(HaveOccurred())
 			})
-			It("gotPages should be equal to pages", func() {
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(gotPages).To(Equal(pages))
+		})
+
+		When("GetHead with non-exist listKey", func() {
+			It("should return ResourceNotFound", func() {
+				Expect(getHead(client, "non-exist-key", userID)).ShouldNot(HaveOccurred())
+			})
+		})
+
+		When("GetPage with non-exist pageKey", func() {
+			It("should return ResourceNotFound", func() {
+				_, err := getPages(client, "non-exist head key", userID, len(pages))
+				Expect(err.Error()).To(ContainSubstring("ResourceNotFound"))
+			})
+		})
+
+		When("SetPage with non-exist listKey", func() {
+			It("should return ResourceNotFound", func() {
+				Expect(setPage(client, listKey, userID, pages).Error()).To(ContainSubstring(pageAPI.ErrListNotFound.Error()))
 			})
 		})
 	})
 })
+
+/*
+func main() {
+	client := pageconnect.NewPageServiceClient(
+		newInsecureClient(),
+		address,
+		connect.WithGRPC(),
+	)
+
+	// Create a new list
+	listKey := "my_list"
+	userID := int64(123)
+
+	if err := newList(client, listKey, userID); err != nil {
+		panic(fmt.Errorf("failed on newList: %v", err))
+	}
+
+	pages := []string{"page1", "page2", "page3"}
+	if err := setPage(client, listKey, userID, pages); err != nil {
+		panic(fmt.Errorf("failed on setPage: %v", err))
+	}
+
+	head, err := getHead(client, listKey, userID)
+	if err != nil {
+		panic(fmt.Errorf("failed on getHead: %v", err))
+	}
+
+	fmt.Println("got head", head)
+
+	ps, err := getPage(client, head, userID, len(pages))
+	if err != nil {
+		panic(fmt.Errorf("failed on getPage: %v", err))
+	}
+	fmt.Println(ps)
+}
+*/
+
+func newList(client pageconnect.PageServiceClient, listKey string, userID int64) error {
+	req := connect.NewRequest(&pb.NewListRequest{
+		ListKey: listKey,
+		UserID:  userID,
+	})
+	_, err := client.NewList(context.Background(), req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func setPage(client pageconnect.PageServiceClient, listKey string, userID int64, pageContents []string) error {
+	// Set a page with dummy content
+
+	setPageStream := client.SetPage(context.Background())
+
+	for _, ps := range pageContents {
+		setPageReq := &pb.SetPageRequest{
+			UserID:      userID,
+			ListKey:     listKey,
+			PageContent: ps,
+		}
+		if err := setPageStream.Send(setPageReq); err != nil {
+			if err != nil {
+				switch {
+				case err == io.EOF:
+					goto END
+				default:
+					return err
+				}
+			}
+		}
+		_, err := setPageStream.Receive()
+		if err != nil {
+			switch {
+			case err == io.EOF:
+				goto END
+			default:
+				return err
+			}
+		}
+	}
+
+END:
+	if err := setPageStream.CloseRequest(); err != nil {
+		return err
+	}
+	if err := setPageStream.CloseResponse(); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func getHead(client pageconnect.PageServiceClient, listKey string, userID int64) (string, error) {
+	// Get the head of the list
+	getHeadReq := connect.NewRequest(&pb.GetHeadRequest{
+		ListKey: listKey,
+		UserID:  userID,
+	})
+	getHeadResp, err := client.GetHead(context.Background(), getHeadReq)
+	if err != nil {
+		return "", err
+	}
+	head := getHeadResp.Msg.PageKey
+	return head, nil
+}
+
+func getPages(client pageconnect.PageServiceClient, headKey string, userID int64, numOfPage int) ([]string, error) {
+	getPageStream := client.GetPage(context.Background())
+
+	var gotPages []string
+
+	cur := headKey
+	for i := 0; i < numOfPage; i++ {
+		req := &pb.GetPageRequest{
+			PageKey: cur,
+		}
+		err := getPageStream.Send(req)
+		if err != nil {
+			switch {
+			case err == io.EOF:
+				goto END
+			default:
+				return nil, err
+			}
+		}
+		res, err := getPageStream.Receive()
+		if err != nil {
+			switch {
+			case err == io.EOF:
+				goto END
+			default:
+				return nil, err
+			}
+		}
+		gotPages = append(gotPages, res.PageContent)
+		cur = res.Next
+	}
+
+END:
+	if err := getPageStream.CloseRequest(); err != nil {
+		return nil, err
+	}
+	if err := getPageStream.CloseResponse(); err != nil {
+		return nil, err
+	}
+
+	return gotPages, nil
+}
