@@ -69,12 +69,12 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 			return {err = '%s'}
 		end
 		return page
-	`, errors.ResourceNotFound))
+	`, domain.ErrPageNotFound))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), errors.ResourceNotFound.String()):
+		case strings.Contains(err.Error(), domain.ErrPageNotFound.Error()):
 			return domain.Page{}, domain.ErrPageNotFound
 		}
 		return domain.Page{}, errors.Wrap(errors.Internal, " failed on script.Run", err)
