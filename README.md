@@ -18,25 +18,33 @@ Usage:
   build         build the binary
 ```
 
-Start redis-stack container
+Install required package for `connect-go`:
+See [official website](https://connect.build/docs/go/getting-started#install-tools)
+```
+$ go install github.com/bufbuild/buf/cmd/buf@latest
+$ go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+$ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+$ go install github.com/bufbuild/connect-go/cmd/protoc-gen-connect-go@latest
+```
 
+Start redis-stack container:
 ```
 $ make redis/setup
 ````
 
-Build and run binary
+Build and run binary:
 
 ```
 $ make run/server
 ```
 
-Run example client binary
+Run example client binary:
 
 ```
 $ make run/client
 ```
 
-Run the tests
+Run the tests:
 
 ```
 $ make test
@@ -55,7 +63,7 @@ $ make test VERBOSE=1 TESTPKG=./page/repo/redis FOCUS="SetPage.*related data.*"
 PostgreSQL implements MVCC, and for the deleted row, `tx_max` field will be marked, and when it comes to vacuum, this deleted row (dead tuple) will be cleaned. If we delete data frequently, there will be a lot of dead tuples in heap page.
 This will cause `Index Scan` require more disk IO because the actual data is spreaded across multiple pages.
 
-Although we can use some trick like:
+Although we can use some tricks like:
 - Using online clustering tool e.g. [`pg_repack`](https://reorg.github.io/pg_repack/) to reorganize table 
 - Put data with similar expired time under same table, and Drop the table if all rows are expired.
 
