@@ -71,19 +71,26 @@ var _ = Describe("PageAPI", Ordered, func() {
 			listKey string
 		)
 		const (
-			validListKey  = "validListKey"
-			validUserID   = 33
-			invalidUserID = ""
+			validListKey        = "validListKey"
+			alreadyExistListKey = "alreadyExistListKey"
+			validUserID         = 33
+			invalidUserID       = 0
+			invalidListKey      = ""
 		)
 		JustBeforeEach(func() {
 			mockPageUsecase.
 				EXPECT().
 				NewList(gomock.Any(), userID, gomock.Any()).
 				DoAndReturn(func(ctx context.Context, userID int64, listKey domain.ListKey) error {
-					if string(listKey) == validListKey {
+					switch string(listKey) {
+					case validListKey:
+						// normal
 						return nil
+					case alreadyExistListKey:
+						return domain.ErrListAlreadyExists
+					default:
+						return domain.ErrInternal
 					}
-					return domain.ErrListAlreadyExists
 				}).AnyTimes()
 			res, err = client.NewList(context.Background(), connect.NewRequest(&pb.NewListRequest{
 				ListKey: listKey,
@@ -92,7 +99,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 		})
 		Context("normal", func() {
 			BeforeEach(func() {
-				userID = 33
+				userID = validUserID
 				listKey = validListKey
 			})
 			It("should return OK", func() {
@@ -103,7 +110,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 		When("listKey is not valid", func() {
 			BeforeEach(func() {
 				userID = validUserID
-				listKey = invalidUserID
+				listKey = invalidListKey
 			})
 			It("should return invalid argument", func() {
 				Expect(err.Error()).To(ContainSubstring(domain.ErrInvalidListKey.Error()))
@@ -111,11 +118,20 @@ var _ = Describe("PageAPI", Ordered, func() {
 		})
 		When("userID not valid", func() {
 			BeforeEach(func() {
-				userID = 0
+				userID = invalidUserID
 				listKey = validListKey
 			})
 			It("should return invalid userID error", func() {
 				Expect(err.Error()).To(ContainSubstring(domain.ErrInvalidUserID.Error()))
+			})
+		})
+		When("list already exist", func() {
+			BeforeEach(func() {
+				userID = validUserID
+				listKey = alreadyExistListKey
+			})
+			It("should return invalid userID error", func() {
+				Expect(err.Error()).To(ContainSubstring(domain.ErrListAlreadyExists.Error()))
 			})
 		})
 	})
