@@ -23,6 +23,8 @@ func NewPageRepo(c *redis.Client) domain.PageRepo {
 	return &pageRepoImpl{client: c}
 }
 
+// NewList initializes the list with listMeta, pageList.
+// If list already exists, we return domain.ErrListAlreadyExists
 func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain.ListKey) error {
 	listMetaKeyByUser := domain.GenerateListMetaKeyByUserID(listKey, userID)
 	keys := []string{string(listMetaKeyByUser)}
@@ -53,6 +55,8 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 	return nil
 }
 
+// GetPage gets the page by `pageKey`.
+// If page not found, we return domain.ErrPageNotFound
 func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
 	keys := []string{string(pageKey)}
 	args := []any{}
@@ -83,6 +87,10 @@ func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (dom
 	return p, nil
 }
 
+// GetHead gets the head for head field of HashMap listMeta, but if head inside it is expired,
+// oldest valid pageKey inside sortedset `pageList` will be returned, and as a side effect,
+// expired pageKey will be cleaned.
+// If listKey not exist, we return domain.ErrListNotFound.
 func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain.ListKey) (domain.PageKey, error) {
 	listKeyByUser := domain.GenerateListKeyByUserID(listKey, userID)
 	listMetaKey := domain.GenerateListMetaKeyByUserID(listKey, userID)
@@ -110,21 +118,21 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
       return ""
     end
 
-		-- check if head does exist
-		if redis.call("EXISTS", headPageKey) == 0 then
-			-- means head is expired, use ZREMRANGEBYSCORE to remove expired key
-			redis.call("ZREMRANGEBYSCORE", listKeyByUser, 0, expireTime)
+	-- check if head does exist
+	if redis.call("EXISTS", headPageKey) == 0 then
+		-- means head is expired, use ZREMRANGEBYSCORE to remove expired key
+		redis.call("ZREMRANGEBYSCORE", listKeyByUser, 0, expireTime)
 
-			-- -- set pageMeta.head to oldest key that doesn't expired
-			headPageKey = redis.call("ZRANGE", KEYS[2], 0, "+inf", "BYSCORE", "LIMIT", 0, 1)
-			redis.log(redis.LOG_NOTICE, "got headPageKey", headPageKey)
-			redis.call("HSET", KEYS[1], "head", headPageKey)
+		-- -- set pageMeta.head to oldest key that doesn't expired
+		headPageKey = redis.call("ZRANGE", KEYS[2], 0, "+inf", "BYSCORE", "LIMIT", 0, 1)
+		redis.log(redis.LOG_NOTICE, "got headPageKey", headPageKey)
+		redis.call("HSET", KEYS[1], "head", headPageKey)
 
-			-- return the new one
-			return headPageKey
-		end
-
+		-- return the new one
 		return headPageKey
+	end
+
+	return headPageKey
 	`, domain.ErrListNotFound.Error()))
 
 	result, err := script.Run(context.Background(), r.client, keys, args...).Result()
@@ -140,6 +148,11 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
 	return domain.PageKey(result.(string)), nil
 }
 
+// SetPage do the following things:
+// - Find the tail recorded in listMeta.tail, modify .next field of tail RedisJSON object point to itself.
+// - Add new pageKey with expire time to sorted set (pageList)
+// - Add new RedisJSON object
+// If listKey not exist, we return domain.ErrListNotFound.
 func (r *pageRepoImpl) SetPage(
 	ctx context.Context,
 	userID int64,
