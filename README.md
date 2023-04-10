@@ -79,14 +79,14 @@ See [The Internals of PostgreSQL - Chapter 5: Concurrency Control ](https://www.
 
 ## Choice of gRPC package
 
-To be honest, it's because I can't generate correct gRPC .go file with Google gRPC package.
-The command is too hard to use. 
+- Simplicity: To be honest, it's because I can't generate correct gRPC .go file with Google gRPC package. The command is too hard to use
+- Ecosystem: Can use Golang's `net/http` ecosystem, and for testing, we can use `net/http/httptest` package
 
 ## Redis Storage Design
 
 ### Goals:
 > 1. Make sure that every operation is 1 RTT (Round-trip time)
-> 2. Make sure that related data structure is stored in
+> 2. Make sure that related data structure is stored in same Node
 
 First one is achieved by using lua script, it's convenient because every lua script is ensured to be executed atomically, there's no way to interrupt this, so we don't use something like `MULTI`, `EXEC`, `WATCH`, which is hard to use them within 1 RTT.
 
