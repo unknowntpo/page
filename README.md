@@ -161,7 +161,9 @@ we use ZREMRANGEBYSCORE to remove expired pageKey entry in sorted set `pageList`
 
 Pros:
 - Cloud native, high availability, don't need to worry about sharding things.
-- Can use TTL with [Time Window Compaction Strategy (TWCS)](https://docs.scylladb.com/stable/kb/ttl-facts.html) to Drop whole expired SSTable.
+- Can use TTL with [Time Window Compaction Strategy (TWCS)](https://docs.scylladb.com/stable/kb/ttl-facts.html) to automatically whole expired SSTable.
+- Can leverage disk storage, in contract, Redis can only use memory to store data.
+- Can use CQL to query data, compared to Redis, this approach is more natural for me.
 
 ### Use `Packer`, `Terraform` to deploy services to cloud
 
