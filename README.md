@@ -147,6 +147,8 @@ we use ZREMRANGEBYSCORE to remove expired pageKey entry in sorted set `pageList`
 > - **Time Complexity**: O(1)
 > - **RTT**: 1
 
+`GetPage` gets the page by `pageKey`.
+
 ### Drawback of this design
 > - TTL can not be adjusted because the linked list will broken.
 > - Redis is in-memory database, and we don't have a way to swap unused object into disk file, this will require lots of Redis node, which will be very expensive
