@@ -20,6 +20,15 @@ type pageServer struct {
 	useCase domain.PageUsecase
 }
 
+// NewList creates a new list for a given user and list key.
+// Return value:
+// - Status OK if operation succeed.
+// - error if exists.
+//
+// An error object indicating the error if the operation was unsuccessful. The possible errors are:
+// - connect.CodeInvalidArgument: if the ListKey or UserID are not valid.
+// - connect.CodeAlreadyExists: if a list with the same list key already exists for the given user.
+// - connect.CodeInternal: if an internal error occurs.
 func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewListRequest]) (*connect.Response[pb.NewListResponse], error) {
 	// verify inpput
 	// TODO: Put verification inside domain
@@ -46,6 +55,10 @@ func (s *pageServer) NewList(ctx context.Context, req *connect.Request[pb.NewLis
 	return res, nil
 }
 
+// GetHead retrieves the head page of the specified list for a given user.
+// - An error object indicating the error if the operation was unsuccessful. The possible errors are:
+// - connect.CodeNotFound: if the specified list was not found for the given user.
+// - connect.CodeInternal: if an internal error occurs.
 func (s *pageServer) GetHead(ctx context.Context, req *connect.Request[pb.GetHeadRequest]) (*connect.Response[pb.GetHeadResponse], error) {
 	pageKey, err := s.useCase.GetHead(ctx, req.Msg.UserID, domain.ListKey(req.Msg.ListKey))
 	if err != nil {
@@ -64,8 +77,15 @@ func (s *pageServer) GetHead(ctx context.Context, req *connect.Request[pb.GetHea
 	return res, nil
 }
 
+// GetPage streams the content of a page in a list for a given user.
+// Return value:
+// - page content: the conent of this page.
+// - next: next pageKey.
+// - error if exists.
+// An error object indicating the error if the operation was unsuccessful. The possible errors are:
+// - connect.CodeNotFound: if the specified page was not found for the given user.
+// - connect.CodeInternal: if an internal error occurs.
 func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.GetPageRequest, pb.GetPageResponse]) error {
-	// 	GetPage(context.Context, *connect_go.BidiStream[page.PageKey, page.Page]) error
 	for {
 		req, err := stream.Receive()
 		if err != nil {
@@ -101,6 +121,14 @@ func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.
 	}
 }
 
+// SetPage sets the content of a page in a list for a given user.
+// Return value:
+// - pageKey: the pageKey assigned to this page.
+// - error if exists.
+// An error object indicating the error will be returned if the operation was unsuccessful. The possible errors are:
+// - connect.CodeInternal: if an internal error occurs.
+// - connect.CodeAborted: if the operation was aborted due to an error.
+// - domain.ErrInternal: if an internal error occurs in the domain layer.
 func (s *pageServer) SetPage(ctx context.Context, stream *connect.BidiStream[pb.SetPageRequest, pb.SetPageResponse]) error {
 	for {
 		req, err := stream.Receive()
