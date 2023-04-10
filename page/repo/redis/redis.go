@@ -98,12 +98,12 @@ func (r *pageRepoImpl) GetHead(ctx context.Context, userID int64, listKey domain
     local listKeyByUser = KEYS[2]
     local expireTime = ARGV[1]
 
-		if redis.call("EXISTS", listMetaKey) == 0 then
+	if redis.call("EXISTS", listMetaKey) == 0 then
       return { err = "%s" }
     end
 
-		-- get head from pageMeta
-		local headPageKey = redis.call("HGET", listMetaKey, "head")
+	-- get head from listMeta
+	local headPageKey = redis.call("HGET", listMetaKey, "head")
 
     -- edge case: list exist but list has no page
     if headPageKey == "" then
