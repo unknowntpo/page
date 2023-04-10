@@ -62,14 +62,15 @@ $ make test VERBOSE=1 TESTPKG=./page/repo/redis FOCUS="SetPage.*related data.*"
 
 :question: **Why not PostgreSQL ?**
 
-PostgreSQL implements MVCC, and for the deleted row, `tx_max` field will be marked, and when it comes to vacuum, this deleted row (dead tuple) will be cleaned. If we delete data frequently, there will be a lot of dead tuples in heap page.
-This will cause `Index Scan` require more disk IO because the actual data is spreaded across multiple pages.
+PostgreSQL implements *Multi-version Concurrency Control (MVCC)* by *Snapshot Isolation (SI)*, and for the deleted row, `t_xmax` field will be marked, and when it comes to VACUUM, this deleted row (dead tuple) will be cleaned. If we delete data frequently, there will be a lot of dead tuples in heap page. This will cause `Index Scan` require more disk IO because the actual data is spreaded across multiple pages.
 
 Although we can use some tricks like:
 - Using online clustering tool e.g. [`pg_repack`](https://reorg.github.io/pg_repack/) to reorganize table 
 - Put data with similar expired time under same table, and Drop the table if all rows are expired.
 
-But I think this will increase complexity
+But I think this will increase complexity.
+
+See [The Internals of PostgreSQL - Chapter 5: Concurrency Control ](https://www.interdb.jp/pg/pgsql05.html#_5.5.) for more information about Snapshot Isolation in PostgreSQL.
 
 :question: **Why I choose Redis ?**
 
