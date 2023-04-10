@@ -118,7 +118,7 @@ The reason is that `cjson` stores data in text format it means that , so if we n
 > - **RTT**: 1
 
 
-`NewList` initializes the list with `listMeta`, `pageList`
+`NewList` initializes the list with `listMeta`, `pageList`.
 
 #### SetPage:
 
@@ -137,6 +137,8 @@ The reason is that `cjson` stores data in text format it means that , so if we n
 >   - Worst: O(log(N)+M) with N being the number of elements in the sorted set and M the number of expired elements removed by the operation.
 > - **RTT**: 1
 
+`GetHead` gets the head for head field of HashMap `listMeta`, but if head inside it is expired,
+we use ZREMRANGEBYSCORE to remove expired pageKey entry in sorted set `pageList`, then set the new head to `listMeta.head`.
 
   See [ZREMRANGEBYSCORE command](https://redis.io/commands/zremrangebyscore/) for more information.
 
