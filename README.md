@@ -15,7 +15,9 @@ Usage:
   redis/flush   wipe out data in redis
   redis/down    delete redis container
   test          run unit tests
-  build         build the binary
+  build         build the server binary
+  run/server    build and run the server binary
+  run/client    build and run the client binary
 ```
 
 Install required package for `connect-go`:
