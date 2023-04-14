@@ -30,12 +30,15 @@ message GetHeadResponse {
 }
 
 message GetPageRequest {
-    string pageKey = 1;
+    string listKey = 1;
+    int64 userID = 2;
+    string pageKey = 3;
 }
 
 message GetPageResponse {
-    string pageContent = 1;
-    string next = 2;
+    string key = 1;
+    string pageContent = 2;
+    string next = 3;
 }
 
 message SetPageRequest {

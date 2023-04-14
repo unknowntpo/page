@@ -3,24 +3,20 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/unknowntpo/page/pkg/errors"
-
-	"github.com/oklog/ulid/v2"
-	"golang.org/x/exp/rand"
 )
 
 type PageUsecase interface {
-	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
+	GetPage(ctx context.Context, userID int64, listKey ListKey, pageKey PageKey) (Page, error)
 	GetHead(ctx context.Context, userID int64, listKey ListKey) (PageKey, error)
 	SetPage(ctx context.Context, userID int64, listKey ListKey, page Page) (PageKey, error)
 	NewList(ctx context.Context, userID int64, listKey ListKey) error
 }
 
 type PageRepo interface {
-	GetPage(ctx context.Context, pageKey PageKey) (Page, error)
+	GetPage(ctx context.Context, uesrID int64, listKey ListKey, pageKey PageKey) (Page, error)
 	GetHead(ctx context.Context, userID int64, listKey ListKey) (PageKey, error)
 	SetPage(ctx context.Context, userID int64, listkey ListKey, page Page) (PageKey, error)
 	NewList(ctx context.Context, userID int64, listKey ListKey) error
@@ -69,31 +65,8 @@ type Article struct {
 	Content string
 }
 
-func GeneratePageKey(now time.Time) PageKey {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(uint64(now.UnixNano()))), 0)
-	ms := ulid.Timestamp(now)
-	ulid, err := ulid.New(ms, entropy)
-	if err != nil {
-		panic(err)
-	}
-	return PageKey("page:" + ulid.String())
-}
-
-func BuildRedisPageKeyStr(pageKey PageKey) string {
-	return "page:" + string(pageKey)
-}
-
-func GenerateListKeyByUserID(listKey ListKey, userID int64) ListKey {
-	return ListKey(fmt.Sprintf("pageList:%s:%d", listKey, userID))
-}
-
-func GenerateListMetaKeyByUserID(listKey ListKey, userID int64) PageMetaKey {
-	return PageMetaKey(fmt.Sprintf("listMeta:%s:%d", listKey, userID))
-}
-
 const (
-	PersonalBoardKey ListKey       = "personal"
-	DefaultPageTTL   time.Duration = 24 * time.Hour
+	DefaultPageTTL time.Duration = 24 * time.Hour
 )
 
 // Errors defined by our domain

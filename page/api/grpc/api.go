@@ -96,18 +96,21 @@ func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.
 				return connect.NewError(connect.CodeAborted, nil)
 			}
 		}
-		page, err := s.useCase.GetPage(ctx, domain.PageKey(req.PageKey))
+		page, err := s.useCase.GetPage(ctx, req.UserID, domain.ListKey(req.ListKey), domain.PageKey(req.PageKey))
 		if err != nil {
 			switch {
-			case errors.KindIs(err, errors.ResourceNotFound):
-				return connect.NewError(connect.CodeNotFound, errors.New(errors.ResourceNotFound, "resource not found"))
+			case errors.Is(err, domain.ErrListNotFound):
+				return connect.NewError(connect.CodeNotFound, domain.ErrListNotFound)
+			case errors.Is(err, domain.ErrPageNotFound):
+				return connect.NewError(connect.CodeNotFound, domain.ErrPageNotFound)
 			default:
 				// TODO: log error
 				log.Println("failed on s.useCase.GetPage", err)
-				return connect.NewError(connect.CodeInternal, errors.New(errors.Internal, "internal server error"))
+				return connect.NewError(connect.CodeInternal, domain.ErrInternal)
 			}
 		}
 		res := connect.NewResponse(&pb.GetPageResponse{
+			Key:         string(page.Key),
 			PageContent: page.Content,
 			Next:        string(page.Next),
 		})

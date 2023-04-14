@@ -142,7 +142,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 			userID              int64
 			listKey             string
 			err                 error
-			expectedHeadPageKey = domain.GeneratePageKey(time.Now())
+			expectedHeadPageKey domain.PageKey
 		)
 		const (
 			existListKey domain.ListKey = "existListKey"
@@ -161,6 +161,8 @@ var _ = Describe("PageAPI", Ordered, func() {
 				}).AnyTimes()
 		})
 		JustBeforeEach(func() {
+			expectedHeadPageKey = domain.GeneratePageKeyByListKeyUserID(domain.ListKey(listKey), userID, time.Now())
+
 			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
 				ListKey: listKey,
 				UserID:  userID,
@@ -244,6 +246,109 @@ var _ = Describe("PageAPI", Ordered, func() {
 			It("gotPages should be equal to pages", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(gotPages).To(Equal(pages))
+			})
+		})
+	})
+
+	Describe("GetPage", func() {
+		var (
+			res     *pb.GetPageResponse
+			userID  int64
+			listKey string
+			pageKey string
+			err     error
+			stream  *connect.BidiStreamForClient[pb.GetPageRequest, pb.GetPageResponse]
+			//			errors              []error
+			//			s
+		)
+		const (
+			existListKey domain.ListKey = "existListKey"
+			existPagekey domain.PageKey = "existPageKey"
+			nextPageKey  domain.PageKey = "nextPageKey"
+			pageContent                 = "dummy"
+			round                       = 3
+		)
+
+		BeforeEach(func() {
+			userID = 33
+			mockPageUsecase.
+				EXPECT().
+				GetPage(gomock.Any(), userID, gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, userID int64, listKey domain.ListKey, pageKey domain.PageKey) (domain.Page, error) {
+					if listKey != existListKey {
+						return domain.Page{}, domain.ErrListNotFound
+					}
+					if pageKey != existPagekey {
+						return domain.Page{}, domain.ErrPageNotFound
+					}
+					return domain.Page{Key: existPagekey, Content: pageContent, Next: nextPageKey}, nil
+				}).AnyTimes()
+		})
+		JustBeforeEach(func() {
+			stream = client.GetPage(context.Background())
+
+			for i := 0; i < round; i++ {
+				e := stream.Send(
+					&pb.GetPageRequest{
+						UserID:  userID,
+						ListKey: listKey,
+						PageKey: pageKey,
+					})
+				if e != nil {
+					switch e {
+					case io.EOF:
+						goto END
+					default:
+						err = e
+						return
+					}
+				}
+
+				// Wait until we got response
+				res, e = stream.Receive()
+				if e != nil {
+					switch e {
+					case io.EOF:
+						goto END
+					default:
+						err = e
+						goto END
+					}
+				}
+			}
+
+		END:
+			Expect(stream.CloseRequest()).ShouldNot(HaveOccurred())
+			Expect(stream.CloseResponse()).ShouldNot(HaveOccurred())
+		})
+		Context("normal", func() {
+			BeforeEach(func() {
+				pageKey = string(existPagekey)
+				listKey = string(existListKey)
+			})
+			It("should return expected PageKey", func() {
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(res.Key).To(Equal(string(existPagekey)))
+				Expect(res.PageContent).To(Equal(pageContent))
+				Expect(res.Next).To(Equal(string(nextPageKey)))
+			})
+		})
+		Context("list not found", func() {
+			BeforeEach(func() {
+				listKey = "notExistList"
+				pageKey = string(existPagekey)
+			})
+			It("should return domain.ErrListNotFound", func() {
+				Expect(err.Error()).To(ContainSubstring(domain.ErrListNotFound.Error()))
+			})
+		})
+		Context("existed list, but page not found", func() {
+			BeforeEach(func() {
+				listKey = string(existListKey)
+				pageKey = "notExistPage"
+			})
+			It("should return domain.ErrPageNotFound", func() {
+				Expect(err.Error()).To(ContainSubstring(domain.ErrPageNotFound.Error()))
 			})
 		})
 	})

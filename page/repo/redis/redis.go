@@ -57,7 +57,7 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 
 // GetPage gets the page by `pageKey`.
 // If page not found, we return domain.ErrPageNotFound
-func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
+func (r *pageRepoImpl) GetPage(ctx context.Context, _ int64, _ domain.ListKey, pageKey domain.PageKey) (domain.Page, error) {
 	keys := []string{string(pageKey)}
 	args := []any{}
 
@@ -176,7 +176,7 @@ func (r *pageRepoImpl) setPage(
 	// to set score (expired time of the pageKey in sortedset).
 	// Otherwise, the order of expired time can't be ensured
 	now := time.Now()
-	p.Key = domain.GeneratePageKey(now)
+	p.Key = domain.GeneratePageKeyByListKeyUserID(listKey, userID, now)
 
 	pageContent := p.Marshal()
 

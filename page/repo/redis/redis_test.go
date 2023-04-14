@@ -289,7 +289,7 @@ var _ = Describe("PageRepo", Ordered, func() {
 						Expect(err).ShouldNot(HaveOccurred())
 						cur := head
 						for i := 0; i < len(pages); i++ {
-							gotPage, err := repo.GetPage(context.Background(), cur)
+							gotPage, err := repo.GetPage(context.Background(), userID, listKey, cur)
 							Expect(err).ShouldNot(HaveOccurred())
 							gotPages = append(gotPages, gotPage)
 							cur = gotPage.Next
