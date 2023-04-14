@@ -260,12 +260,11 @@ var _ = Describe("PageAPI", Ordered, func() {
 			//			s
 		)
 		const (
-			existListKey    domain.ListKey = "existListKey"
-			existPagekey    domain.PageKey = "existPageKey"
-			expectedPageKey domain.PageKey = "expectedPageKey"
-			nextPageKey     domain.PageKey = "nextPageKey"
-			pageContent                    = "dummy"
-			round                          = 3
+			existListKey domain.ListKey = "existListKey"
+			existPagekey domain.PageKey = "existPageKey"
+			nextPageKey  domain.PageKey = "nextPageKey"
+			pageContent                 = "dummy"
+			round                       = 3
 		)
 
 		BeforeEach(func() {
@@ -280,7 +279,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 					if pageKey != existPagekey {
 						return domain.Page{}, domain.ErrPageNotFound
 					}
-					return domain.Page{Key: expectedPageKey, Content: pageContent, Next: nextPageKey}, nil
+					return domain.Page{Key: existPagekey, Content: pageContent, Next: nextPageKey}, nil
 				}).AnyTimes()
 		})
 		JustBeforeEach(func() {
@@ -327,6 +326,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 			})
 			It("should return expected PageKey", func() {
 				Expect(err).ShouldNot(HaveOccurred())
+				Expect(res.Key).To(Equal(string(existPagekey)))
 				Expect(res.PageContent).To(Equal(pageContent))
 				Expect(res.Next).To(Equal(string(nextPageKey)))
 			})

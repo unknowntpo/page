@@ -110,6 +110,7 @@ func (s *pageServer) GetPage(ctx context.Context, stream *connect.BidiStream[pb.
 			}
 		}
 		res := connect.NewResponse(&pb.GetPageResponse{
+			Key:         string(page.Key),
 			PageContent: page.Content,
 			Next:        string(page.Next),
 		})

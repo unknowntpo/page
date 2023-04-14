@@ -36,8 +36,9 @@ message GetPageRequest {
 }
 
 message GetPageResponse {
-    string pageContent = 1;
-    string next = 2;
+    string key = 1;
+    string pageContent = 2;
+    string next = 3;
 }
 
 message SetPageRequest {
