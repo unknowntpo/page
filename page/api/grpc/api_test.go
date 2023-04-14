@@ -142,7 +142,7 @@ var _ = Describe("PageAPI", Ordered, func() {
 			userID              int64
 			listKey             string
 			err                 error
-			expectedHeadPageKey = domain.GeneratePageKey(time.Now())
+			expectedHeadPageKey domain.PageKey
 		)
 		const (
 			existListKey domain.ListKey = "existListKey"
@@ -161,6 +161,8 @@ var _ = Describe("PageAPI", Ordered, func() {
 				}).AnyTimes()
 		})
 		JustBeforeEach(func() {
+			expectedHeadPageKey = domain.GeneratePageKeyByListKeyUserID(domain.ListKey(listKey), userID, time.Now())
+
 			res, err = client.GetHead(context.Background(), connect.NewRequest(&pb.GetHeadRequest{
 				ListKey: listKey,
 				UserID:  userID,

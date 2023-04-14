@@ -176,7 +176,7 @@ func (r *pageRepoImpl) setPage(
 	// to set score (expired time of the pageKey in sortedset).
 	// Otherwise, the order of expired time can't be ensured
 	now := time.Now()
-	p.Key = domain.GeneratePageKey(now)
+	p.Key = domain.GeneratePageKeyByListKeyUserID(listKey, userID, now)
 
 	pageContent := p.Marshal()
 
