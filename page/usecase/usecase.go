@@ -27,8 +27,8 @@ func (u *pageUsecaseImpl) NewList(ctx context.Context, userID int64, listKey dom
 	return nil
 }
 
-func (u *pageUsecaseImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
-	p, err := u.repo.GetPage(ctx, pageKey)
+func (u *pageUsecaseImpl) GetPage(ctx context.Context, userID int64, listKey domain.ListKey, pageKey domain.PageKey) (domain.Page, error) {
+	p, err := u.repo.GetPage(ctx, userID, listKey, pageKey)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrPageNotFound):

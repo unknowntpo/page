@@ -30,7 +30,9 @@ message GetHeadResponse {
 }
 
 message GetPageRequest {
-    string pageKey = 1;
+    string listKey = 1;
+    int64 userID = 2;
+    string pageKey = 3;
 }
 
 message GetPageResponse {

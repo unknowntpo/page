@@ -51,18 +51,18 @@ func (mr *MockPageUsecaseMockRecorder) GetHead(ctx, userID, listKey interface{})
 }
 
 // GetPage mocks base method.
-func (m *MockPageUsecase) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
+func (m *MockPageUsecase) GetPage(ctx context.Context, userID int64, listKey domain.ListKey, pageKey domain.PageKey) (domain.Page, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPage", ctx, pageKey)
+	ret := m.ctrl.Call(m, "GetPage", ctx, userID, listKey, pageKey)
 	ret0, _ := ret[0].(domain.Page)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPage indicates an expected call of GetPage.
-func (mr *MockPageUsecaseMockRecorder) GetPage(ctx, pageKey interface{}) *gomock.Call {
+func (mr *MockPageUsecaseMockRecorder) GetPage(ctx, userID, listKey, pageKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPage", reflect.TypeOf((*MockPageUsecase)(nil).GetPage), ctx, pageKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPage", reflect.TypeOf((*MockPageUsecase)(nil).GetPage), ctx, userID, listKey, pageKey)
 }
 
 // NewList mocks base method.
@@ -133,18 +133,18 @@ func (mr *MockPageRepoMockRecorder) GetHead(ctx, userID, listKey interface{}) *g
 }
 
 // GetPage mocks base method.
-func (m *MockPageRepo) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
+func (m *MockPageRepo) GetPage(ctx context.Context, uesrID int64, listKey domain.ListKey, pageKey domain.PageKey) (domain.Page, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPage", ctx, pageKey)
+	ret := m.ctrl.Call(m, "GetPage", ctx, uesrID, listKey, pageKey)
 	ret0, _ := ret[0].(domain.Page)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPage indicates an expected call of GetPage.
-func (mr *MockPageRepoMockRecorder) GetPage(ctx, pageKey interface{}) *gomock.Call {
+func (mr *MockPageRepoMockRecorder) GetPage(ctx, uesrID, listKey, pageKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPage", reflect.TypeOf((*MockPageRepo)(nil).GetPage), ctx, pageKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPage", reflect.TypeOf((*MockPageRepo)(nil).GetPage), ctx, uesrID, listKey, pageKey)
 }
 
 // NewList mocks base method.

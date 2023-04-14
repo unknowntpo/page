@@ -57,7 +57,7 @@ func (r *pageRepoImpl) NewList(ctx context.Context, userID int64, listKey domain
 
 // GetPage gets the page by `pageKey`.
 // If page not found, we return domain.ErrPageNotFound
-func (r *pageRepoImpl) GetPage(ctx context.Context, pageKey domain.PageKey) (domain.Page, error) {
+func (r *pageRepoImpl) GetPage(ctx context.Context, _ domain.ListKey, _ int64, pageKey domain.PageKey) (domain.Page, error) {
 	keys := []string{string(pageKey)}
 	args := []any{}
 
